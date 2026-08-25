@@ -15,6 +15,7 @@ import (
 // Server serves the /items shop.
 type Server struct {
 	catalog   atomic.Pointer[items.Catalog]
+	ready     atomic.Bool
 	templates *template.Template
 	policy    *bluemonday.Policy
 }
@@ -30,6 +31,7 @@ func New(cat *items.Catalog) (*Server, error) {
 		policy:    descriptionPolicy(),
 	}
 	s.SetCatalog(cat)
+	s.SetReady(true)
 	return s, nil
 }
 
@@ -38,6 +40,12 @@ func (s *Server) SetCatalog(cat *items.Catalog) {
 	if cat != nil {
 		s.catalog.Store(cat)
 	}
+}
+
+// SetReady toggles the health endpoint. False during graceful shutdown so
+// Railway (or any proxy) stops sending new work to this instance.
+func (s *Server) SetReady(ok bool) {
+	s.ready.Store(ok)
 }
 
 func (s *Server) catalogOrEmpty() *items.Catalog {
@@ -51,6 +59,7 @@ func (s *Server) catalogOrEmpty() *items.Catalog {
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /{$}", s.redirectRoot)
+	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /items", s.items)
 	mux.HandleFunc("GET /items/{id}", s.detail)
 

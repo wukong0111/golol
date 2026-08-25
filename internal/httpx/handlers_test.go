@@ -62,6 +62,33 @@ func testHandler(t *testing.T) http.Handler {
 	return s.Handler()
 }
 
+func TestHealthOK(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	testHandler(t).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `"ok":true`) || !strings.Contains(body, `"items":3`) {
+		t.Fatalf("health body: %s", body)
+	}
+}
+
+func TestHealthNotReady(t *testing.T) {
+	s, err := New(testCatalog(t))
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.SetReady(false)
+	req := httptest.NewRequest(http.MethodGet, "/health", nil)
+	rec := httptest.NewRecorder()
+	s.Handler().ServeHTTP(rec, req)
+	if rec.Code != http.StatusServiceUnavailable {
+		t.Fatalf("status %d", rec.Code)
+	}
+}
+
 func TestRootRedirects(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()

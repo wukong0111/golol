@@ -1,0 +1,8 @@
+# Zero-downtime deploys: Railway waits for GET /health → 200 on the new
+# replica, then SIGTERM to the old one. drainingSeconds is the SIGTERM→SIGKILL
+# window (default is 0, which skips graceful shutdown).
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+drainingSeconds = 15
+restartPolicyType = "ON_FAILURE"

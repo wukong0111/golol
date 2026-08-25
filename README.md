@@ -12,9 +12,13 @@ Abre [http://localhost:8080/items](http://localhost:8080/items). El primer arran
 
 | Variable | Default | Qué hace |
 |---|---|---|
-| `ADDR` | `:8080` | Dirección de escucha |
+| `ADDR` | `:8080` | Dirección de escucha (gana a `PORT`) |
+| `PORT` | — | Puerto que inyecta Railway |
 | `DDRAGON_LOCALE` | `es_ES` | Locale de Data Dragon |
 | `CACHE_DIR` | `.cache/ddragon` | Cache de `item.json` |
+| `SHUTDOWN_TIMEOUT` | `15s` (o draining de Railway − 1s) | Tiempo máximo para terminar requests al apagar |
+
+En SIGTERM/SIGINT el proceso deja `/health` en 503, deja de aceptar conexiones nuevas y espera a que acaben las que ya estaban en vuelo (`http.Server.Shutdown`). `railway.toml` configura el healthcheck y 15s de draining (Railway por defecto manda SIGKILL al instante).
 
 ```bash
 make test

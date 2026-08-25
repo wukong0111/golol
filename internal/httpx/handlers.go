@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"encoding/json"
 	"html/template"
 	"net/http"
 	"strings"
@@ -19,6 +20,25 @@ type page struct {
 	Item          items.Item
 	HTML          template.HTML
 	Components    []items.Item
+}
+
+func (s *Server) health(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Cache-Control", "no-store")
+	if !s.ready.Load() {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	cat := s.catalog.Load()
+	if cat == nil || len(cat.Items) == 0 {
+		http.Error(w, "unavailable", http.StatusServiceUnavailable)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	_ = json.NewEncoder(w).Encode(map[string]any{
+		"ok":      true,
+		"version": cat.Version,
+		"items":   len(cat.Items),
+	})
 }
 
 func (s *Server) items(w http.ResponseWriter, r *http.Request) {
