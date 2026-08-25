@@ -1,0 +1,48 @@
+{{define "items"}}{{template "layout" .}}{{end}}
+
+{{define "content"}}
+<form id="filters"
+      class="shop"
+      hx-get="/items"
+      hx-target="#item-grid"
+      hx-swap="innerHTML"
+      hx-push-url="true"
+      hx-trigger="change"
+      hx-sync="this:replace">
+
+  <aside class="stats-pane">
+    <div class="pane-head">
+      <h2>Estadísticas</h2>
+      <a class="clear" href="/items">Limpiar</a>
+    </div>
+    <p class="hint">Marca varias para exigir todas.</p>
+    <ul class="stat-list">
+      {{range .Stats}}
+      <li>
+        <label class="check">
+          <input type="checkbox" name="stat" value="{{.ID}}" {{if index $.SelectedStats .ID}}checked{{end}}>
+          <span class="box"></span>
+          <span class="label">{{.Label}}</span>
+        </label>
+      </li>
+      {{end}}
+    </ul>
+  </aside>
+
+  <section class="main-pane">
+    <div class="roles" role="radiogroup" aria-label="Rol">
+      {{range .Roles}}
+      <label class="role">
+        <input type="radio" name="role" value="{{.ID}}" {{if eq $.Role .ID}}checked{{end}}>
+        {{.Label}}
+      </label>
+      {{end}}
+    </div>
+    {{template "grid" .}}
+  </section>
+
+  <aside id="item-detail" class="detail-pane">
+    {{template "detail-empty" .}}
+  </aside>
+</form>
+{{end}}

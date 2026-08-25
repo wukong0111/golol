@@ -1,0 +1,29 @@
+{{define "grid"}}
+<div id="item-grid">
+  <div class="grid-meta">{{.Count}} objeto{{if ne .Count 1}}s{{end}}</div>
+  {{if eq .Count 0}}
+  <p class="empty">Ningún objeto combina esos filtros. Prueba a quitar algún check.</p>
+  {{else}}
+    {{range .Groups}}
+    <section class="tier">
+      <h3>{{.Label}}</h3>
+      <div class="grid">
+        {{range .Items}}
+        <button type="button"
+                class="item"
+                title="{{.Name}} — {{.Gold}} oro"
+                hx-get="/items/{{.ID}}"
+                hx-target="#item-detail"
+                hx-swap="innerHTML"
+                hx-push-url="false"
+                hx-on::after-request="document.querySelectorAll('.item.is-on').forEach(el=>el.classList.remove('is-on')); this.classList.add('is-on')">
+          <img src="{{.IconURL}}" alt="{{.Name}}" width="48" height="48" loading="lazy">
+          <span class="gold">{{.Gold}}</span>
+        </button>
+        {{end}}
+      </div>
+    </section>
+    {{end}}
+  {{end}}
+</div>
+{{end}}

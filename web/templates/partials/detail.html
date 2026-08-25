@@ -1,0 +1,46 @@
+{{define "detail-empty"}}
+<div class="detail-placeholder">
+  <p>Selecciona un objeto para ver sus estadísticas y receta.</p>
+</div>
+{{end}}
+
+{{define "detail-missing"}}
+<div class="detail-placeholder">
+  <p>Ese objeto no está en la tienda de la Grieta.</p>
+</div>
+{{end}}
+
+{{define "detail"}}
+<article class="detail">
+  <header class="detail-head">
+    <img src="{{.Item.IconURL}}" alt="" width="64" height="64">
+    <div>
+      <h2>{{.Item.Name}}</h2>
+      <p class="detail-gold">{{.Item.Gold}} oro</p>
+    </div>
+  </header>
+  {{if .Item.Plaintext}}
+  <p class="plaintext">{{.Item.Plaintext}}</p>
+  {{end}}
+  <div class="desc">{{.HTML}}</div>
+  {{if .Components}}
+  <div class="recipe">
+    <h3>Se construye con</h3>
+    <ul>
+      {{range .Components}}
+      <li>
+        <button type="button" class="mini"
+                hx-get="/items/{{.ID}}"
+                hx-target="#item-detail"
+                hx-swap="innerHTML"
+                hx-push-url="false">
+          <img src="{{.IconURL}}" alt="" width="32" height="32">
+          <span>{{.Name}}</span>
+        </button>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+  {{end}}
+</article>
+{{end}}
