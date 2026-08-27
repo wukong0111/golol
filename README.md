@@ -34,7 +34,7 @@ make test
 - **Rol** (uno): Todos, Luchador, Tirador, Asesino, Mago, Tanque, Soporte. Data Dragon no trae clase; el rol se deriva de los `tags`.
 - **Stats** (varios, AND): el objeto tiene que cumplir **todos** los checks marcados. Ejemplo: `/items?role=tank&stat=Armor&stat=SpellBlock`.
 
-Solo se listan objetos comprables en la Grieta del Invocador.
+Solo se listan objetos comprables en la Grieta del Invocador. Data Dragon marca clones de otros modos (ARAM `32xxxx`, prismáticos de Arena `66xxxx`, starters del Abismo) como mapa 11; esos IDs se descartan.
 
 ### Campeones (`/champions`)
 

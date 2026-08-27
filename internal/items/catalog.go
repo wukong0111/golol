@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 
 	"golol/internal/ddragon"
@@ -33,7 +34,7 @@ func Parse(version, locale, cdnBase string, raw []byte) (*Catalog, error) {
 		ByID:    make(map[string]Item, len(file.Data)),
 	}
 	for id, src := range file.Data {
-		if !isSummonersRiftPurchasable(src) {
+		if !isSummonersRiftPurchasable(id, src) {
 			continue
 		}
 		name := strings.TrimSpace(src.Name)
@@ -71,7 +72,10 @@ func Parse(version, locale, cdnBase string, raw []byte) (*Catalog, error) {
 	return cat, nil
 }
 
-func isSummonersRiftPurchasable(src ddragon.Item) bool {
+func isSummonersRiftPurchasable(id string, src ddragon.Item) bool {
+	if !isRiftItemID(id) || aramStarter(id) {
+		return false
+	}
 	if !src.Gold.Purchasable || src.HideFromAll || !src.AvailableInStore() {
 		return false
 	}
@@ -79,6 +83,28 @@ func isSummonersRiftPurchasable(src ddragon.Item) bool {
 		return false
 	}
 	return true
+}
+
+// isRiftItemID reports whether the Data Dragon id belongs to the live
+// Summoner's Rift shop. Mode copies (ARAM 32xxxx, Arena prismatics 66xxxx, …)
+// reuse the same name and often set maps.11, but their ids are ≥ 10000.
+func isRiftItemID(id string) bool {
+	n, err := strconv.Atoi(id)
+	return err == nil && n > 0 && n < 10000
+}
+
+// aramStarter is the Howling Abyss opening-item set. Data Dragon marks them
+// for map 11 even though they are not sold on Summoner's Rift.
+func aramStarter(id string) bool {
+	switch id {
+	case "2051", // Cuerno del guardián
+		"3112", // Orbe del guardián
+		"3177", // Espada del guardián
+		"3184": // Martillo del guardián
+		return true
+	default:
+		return false
+	}
 }
 
 // Get returns an item by Data Dragon id.

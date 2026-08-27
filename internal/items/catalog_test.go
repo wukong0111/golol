@@ -88,6 +88,68 @@ func TestParseInStoreDefaultTrue(t *testing.T) {
 	}
 }
 
+func TestParseDropsModeCopies(t *testing.T) {
+	raw := []byte(`{
+		"data":{
+			"1029":{
+				"name":"Armadura de tela",
+				"gold":{"purchasable":true,"total":300},
+				"tags":["Armor"],
+				"maps":{"11":true},
+				"image":{"full":"1029.png"}
+			},
+			"6631":{
+				"name":"Cortasendas",
+				"gold":{"purchasable":true,"total":3300},
+				"tags":["Damage"],
+				"maps":{"11":true},
+				"depth":3,
+				"image":{"full":"6631.png"}
+			},
+			"663193":{
+				"name":"Protector pétreo de gárgola",
+				"gold":{"purchasable":true,"total":2500},
+				"tags":["Armor"],
+				"maps":{"11":true},
+				"image":{"full":"3193.png"}
+			},
+			"323003":{
+				"name":"Bastón del arcángel",
+				"gold":{"purchasable":true,"total":2900},
+				"tags":["SpellDamage"],
+				"maps":{"11":true},
+				"depth":3,
+				"image":{"full":"3003.png"}
+			},
+			"2051":{
+				"name":"Cuerno del guardián",
+				"gold":{"purchasable":true,"total":950},
+				"tags":["Health"],
+				"maps":{"11":true,"12":true},
+				"image":{"full":"2051.png"}
+			}
+		}
+	}`)
+	cat, err := Parse("16.16.1", "es_ES", ddragon.DefaultBaseURL, raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cat.Items) != 2 {
+		t.Fatalf("expected cloth + stridebreaker, got %+v", cat.Items)
+	}
+	if _, ok := cat.Get("1029"); !ok {
+		t.Fatal("cloth armor is a Rift item")
+	}
+	if _, ok := cat.Get("6631"); !ok {
+		t.Fatal("4-digit legendary must stay")
+	}
+	for _, id := range []string{"663193", "323003", "2051"} {
+		if _, ok := cat.Get(id); ok {
+			t.Fatalf("mode copy %s leaked into the shop", id)
+		}
+	}
+}
+
 func TestComponents(t *testing.T) {
 	raw := []byte(`{
 		"data":{
