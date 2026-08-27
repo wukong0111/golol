@@ -1,0 +1,47 @@
+{{define "champion-detail-empty"}}
+<div class="detail-placeholder">
+  <p>Selecciona un campeón para ver su splash y sus habilidades.</p>
+</div>
+{{end}}
+
+{{define "champion-detail-missing"}}
+<div class="detail-placeholder">
+  <p>Ese campeón no está en el parche.</p>
+</div>
+{{end}}
+
+{{define "champion-detail"}}
+<article class="champ-kit">
+  <div class="champ-splash">
+    <img src="{{.Champion.SplashURL}}" alt="{{.Champion.Name}}" width="1215" height="717">
+  </div>
+  <div class="champ-info">
+    <header class="champ-head">
+      <h2>{{.Champion.Name}}</h2>
+      {{if .Champion.Title}}<p class="champ-title">{{.Champion.Title}}</p>{{end}}
+      {{if .Champion.RoleLabels}}
+      <ul class="champ-roles">
+        {{range .Champion.RoleLabels}}
+        <li>{{.}}</li>
+        {{end}}
+      </ul>
+      {{end}}
+    </header>
+    <ul class="spell-list">
+      {{range .Abilities}}
+      <li class="spell">
+        <div class="spell-head">
+          {{if .Key}}<span class="spell-key">{{.Key}}</span>{{end}}
+          {{if .IconURL}}<img src="{{.IconURL}}" alt="" width="48" height="48">{{end}}
+          <div>
+            <h3>{{.Name}}</h3>
+            {{if and .Cooldown (ne .Cooldown "0")}}<p class="spell-cd">{{.Cooldown}} s</p>{{end}}
+          </div>
+        </div>
+        <div class="desc">{{.HTML}}</div>
+      </li>
+      {{end}}
+    </ul>
+  </div>
+</article>
+{{end}}

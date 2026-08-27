@@ -41,6 +41,35 @@ body {
   margin-bottom: 16px;
   border-bottom: 1px solid var(--gold-dim);
   padding-bottom: 12px;
+  gap: 12px;
+}
+
+.topbar-left {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.nav {
+  display: flex;
+  gap: 12px;
+}
+
+.nav a {
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-bottom: 1px solid transparent;
+  padding-bottom: 2px;
+}
+
+.nav a:hover,
+.nav a.is-on {
+  color: var(--gold-bright);
+  border-bottom-color: var(--gold);
 }
 
 .brand-mark {
@@ -320,9 +349,190 @@ body {
   line-height: 1.5;
 }
 
+.champ-page {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.champ-shop {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.champ-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
+  gap: 8px;
+}
+
+.champ {
+  appearance: none;
+  background: var(--slot);
+  border: 1px solid var(--gold-dim);
+  padding: 4px 4px 6px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  color: var(--gold-bright);
+  font-size: 11px;
+  min-width: 0;
+}
+
+.champ img {
+  display: block;
+  width: 64px;
+  height: 64px;
+}
+
+.champ-name {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.champ:hover,
+.champ.is-on {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px var(--gold), 0 0 12px rgb(200 170 110 / 25%);
+  background: var(--slot-hover);
+}
+
+.champ:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 2px;
+}
+
+.champ-detail-pane {
+  background: linear-gradient(180deg, #0d1a2a 0%, #07101c 100%);
+  border: 1px solid var(--gold-dim);
+  box-shadow: 0 0 0 1px #000, 0 12px 40px rgb(0 0 0 / 35%);
+  padding: 16px;
+  min-height: 200px;
+}
+
+.champ-kit {
+  display: grid;
+  grid-template-columns: minmax(200px, 360px) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.champ-splash img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1215 / 717;
+  object-fit: cover;
+  border: 1px solid var(--gold);
+}
+
+.champ-head h2 {
+  margin: 0;
+  font-family: Marcellus, Georgia, serif;
+  color: var(--gold-bright);
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.champ-title {
+  margin: 4px 0 0;
+  color: var(--gold);
+  font-style: italic;
+}
+
+.champ-roles {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.champ-roles li {
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-bright);
+  padding: 4px 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spell-list {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.spell {
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+}
+
+.spell .desc {
+  border-top: none;
+  padding-top: 0;
+}
+
+.spell-head {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.spell-head img {
+  border: 1px solid var(--gold-dim);
+  width: 48px;
+  height: 48px;
+}
+
+.spell-head h3 {
+  margin: 0;
+  font-family: Marcellus, Georgia, serif;
+  color: var(--gold);
+  font-size: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.spell-key {
+  flex: none;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--gold);
+  color: var(--gold-bright);
+  font-weight: 700;
+  font-size: 13px;
+  background: #010a13;
+}
+
+.spell-cd {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
 @media (max-width: 960px) {
   .shop {
     grid-template-columns: 1fr;
   }
   .detail-pane { position: static; }
+  .champ-shop,
+  .champ-kit {
+    grid-template-columns: 1fr;
+  }
 }

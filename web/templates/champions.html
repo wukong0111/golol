@@ -1,0 +1,42 @@
+{{define "champions"}}
+{{template "html-start" .}}
+<div class="champ-page">
+  <form id="champ-filters"
+        class="champ-shop"
+        hx-get="/champions"
+        hx-target="#champion-grid"
+        hx-swap="innerHTML"
+        hx-push-url="true"
+        hx-trigger="change"
+        hx-sync="this:replace">
+
+    <aside class="stats-pane">
+      <div class="pane-head">
+        <h2>Roles</h2>
+        <a class="clear" href="/champions">Limpiar</a>
+      </div>
+      <p class="hint">Marca uno o varios. Un campeón entra si encaja con alguno.</p>
+      <ul class="stat-list">
+        {{range .Roles}}
+        <li>
+          <label class="check">
+            <input type="checkbox" name="role" value="{{.ID}}" {{if index $.SelectedRoles .ID}}checked{{end}}>
+            <span class="box"></span>
+            <span class="label">{{.Label}}</span>
+          </label>
+        </li>
+        {{end}}
+      </ul>
+    </aside>
+
+    <section class="main-pane">
+      {{template "champion-grid" .}}
+    </section>
+  </form>
+
+  <aside id="champion-detail" class="champ-detail-pane">
+    {{template "champion-detail-empty" .}}
+  </aside>
+</div>
+{{template "html-end" .}}
+{{end}}

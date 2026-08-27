@@ -20,6 +20,9 @@ func TestLatestVersionAndFetch(t *testing.T) {
 	mux.HandleFunc("/cdn/16.16.1/data/es_ES/item.json", func(w http.ResponseWriter, r *http.Request) {
 		_, _ = w.Write([]byte(`{"type":"item","version":"16.16.1","data":{}}`))
 	})
+	mux.HandleFunc("/cdn/16.16.1/data/es_ES/championFull.json", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"type":"champion","version":"16.16.1","data":{}}`))
+	})
 	ts := httptest.NewServer(mux)
 	t.Cleanup(ts.Close)
 
@@ -36,18 +39,30 @@ func TestLatestVersionAndFetch(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(body) == 0 {
-		t.Fatal("empty body")
+		t.Fatal("empty items body")
+	}
+	champs, err := c.FetchChampions(context.Background(), ver, "es_ES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(champs) == 0 {
+		t.Fatal("empty champions body")
 	}
 }
 
 func TestStoreUsesDiskCache(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "16.16.1", "es_ES", "item.json")
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+	itemsPath := filepath.Join(dir, "16.16.1", "es_ES", ItemsFile)
+	champsPath := filepath.Join(dir, "16.16.1", "es_ES", ChampionsFile)
+	if err := os.MkdirAll(filepath.Dir(itemsPath), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	payload := []byte(`{"type":"item","version":"16.16.1","data":{}}`)
-	if err := os.WriteFile(path, payload, 0o644); err != nil {
+	itemsPayload := []byte(`{"type":"item","version":"16.16.1","data":{}}`)
+	champsPayload := []byte(`{"type":"champion","version":"16.16.1","data":{}}`)
+	if err := os.WriteFile(itemsPath, itemsPayload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(champsPath, champsPayload, 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -65,12 +80,55 @@ func TestStoreUsesDiskCache(t *testing.T) {
 		Client: &Client{BaseURL: ts.URL, HTTPClient: ts.Client()},
 		Dir:    dir,
 	}
-	ver, raw, err := store.Load(context.Background(), "es_ES")
+	snap, err := store.Load(context.Background(), "es_ES")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if ver != "16.16.1" || string(raw) != string(payload) {
-		t.Fatalf("cache miss: %s %s", ver, raw)
+	if snap.Version != "16.16.1" || string(snap.Items) != string(itemsPayload) {
+		t.Fatalf("items cache miss: %s %s", snap.Version, snap.Items)
+	}
+	if string(snap.Champions) != string(champsPayload) {
+		t.Fatalf("champions cache miss: %s", snap.Champions)
+	}
+}
+
+func TestStoreFallsBackWhenChampionsMissing(t *testing.T) {
+	dir := t.TempDir()
+	oldItems := filepath.Join(dir, "16.15.1", "es_ES", ItemsFile)
+	oldChamps := filepath.Join(dir, "16.15.1", "es_ES", ChampionsFile)
+	if err := os.MkdirAll(filepath.Dir(oldItems), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(oldItems, []byte(`{"type":"item","version":"16.15.1"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(oldChamps, []byte(`{"type":"champion","version":"16.15.1"}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/versions.json", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`["16.16.1"]`))
+	})
+	mux.HandleFunc("/cdn/16.16.1/data/es_ES/item.json", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"type":"item","version":"16.16.1"}`))
+	})
+	mux.HandleFunc("/cdn/16.16.1/data/es_ES/championFull.json", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "nope", http.StatusBadGateway)
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+
+	store := &Store{
+		Client: &Client{BaseURL: ts.URL, HTTPClient: ts.Client()},
+		Dir:    dir,
+	}
+	snap, err := store.Load(context.Background(), "es_ES")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snap.Version != "16.15.1" {
+		t.Fatalf("expected cached pair 16.15.1, got %s", snap.Version)
 	}
 }
 
@@ -79,5 +137,24 @@ func TestIconURL(t *testing.T) {
 	want := "https://ddragon.leagueoflegends.com/cdn/16.16.1/img/item/1029.png"
 	if got != want {
 		t.Fatalf("%s != %s", got, want)
+	}
+}
+
+func TestChampionAssetURLs(t *testing.T) {
+	icon := ChampionIconURL(DefaultBaseURL, "16.16.1", "Aatrox.png")
+	if icon != "https://ddragon.leagueoflegends.com/cdn/16.16.1/img/champion/Aatrox.png" {
+		t.Fatalf("icon: %s", icon)
+	}
+	splash := SplashURL(DefaultBaseURL, "Aatrox")
+	if splash != "https://ddragon.leagueoflegends.com/cdn/img/champion/splash/Aatrox_0.jpg" {
+		t.Fatalf("splash: %s", splash)
+	}
+	spell := SpellIconURL(DefaultBaseURL, "16.16.1", "AatroxQ.png")
+	if spell != "https://ddragon.leagueoflegends.com/cdn/16.16.1/img/spell/AatroxQ.png" {
+		t.Fatalf("spell: %s", spell)
+	}
+	passive := PassiveIconURL(DefaultBaseURL, "16.16.1", "Aatrox_Passive.png")
+	if passive != "https://ddragon.leagueoflegends.com/cdn/16.16.1/img/passive/Aatrox_Passive.png" {
+		t.Fatalf("passive: %s", passive)
 	}
 }

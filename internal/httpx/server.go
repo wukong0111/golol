@@ -8,20 +8,22 @@ import (
 
 	"github.com/microcosm-cc/bluemonday"
 
+	"golol/internal/champions"
 	"golol/internal/items"
 	"golol/web"
 )
 
-// Server serves the /items shop.
+// Server serves the /items shop and the /champions roster.
 type Server struct {
 	catalog   atomic.Pointer[items.Catalog]
+	champions atomic.Pointer[champions.Catalog]
 	ready     atomic.Bool
 	templates *template.Template
 	policy    *bluemonday.Policy
 }
 
-// New constructs the HTTP handler with an initial catalog.
-func New(cat *items.Catalog) (*Server, error) {
+// New constructs the HTTP handler with initial catalogs.
+func New(cat *items.Catalog, champs *champions.Catalog) (*Server, error) {
 	tmpl, err := template.ParseFS(web.Templates, "templates/*.html", "templates/partials/*.html")
 	if err != nil {
 		return nil, err
@@ -31,6 +33,7 @@ func New(cat *items.Catalog) (*Server, error) {
 		policy:    descriptionPolicy(),
 	}
 	s.SetCatalog(cat)
+	s.SetChampions(champs)
 	s.SetReady(true)
 	return s, nil
 }
@@ -39,6 +42,13 @@ func New(cat *items.Catalog) (*Server, error) {
 func (s *Server) SetCatalog(cat *items.Catalog) {
 	if cat != nil {
 		s.catalog.Store(cat)
+	}
+}
+
+// SetChampions swaps the live roster (used on Data Dragon refresh).
+func (s *Server) SetChampions(cat *champions.Catalog) {
+	if cat != nil {
+		s.champions.Store(cat)
 	}
 }
 
@@ -55,6 +65,13 @@ func (s *Server) catalogOrEmpty() *items.Catalog {
 	return &items.Catalog{ByID: map[string]items.Item{}}
 }
 
+func (s *Server) championsOrEmpty() *champions.Catalog {
+	if cat := s.champions.Load(); cat != nil {
+		return cat
+	}
+	return &champions.Catalog{ByID: map[string]champions.Champion{}}
+}
+
 // Handler returns the mux for ListenAndServe.
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
@@ -62,6 +79,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /health", s.health)
 	mux.HandleFunc("GET /items", s.items)
 	mux.HandleFunc("GET /items/{id}", s.detail)
+	mux.HandleFunc("GET /champions", s.championsPage)
+	mux.HandleFunc("GET /champions/{id}", s.championDetail)
 
 	static, err := fs.Sub(web.Static, "static")
 	if err != nil {

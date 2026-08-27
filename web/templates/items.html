@@ -1,6 +1,5 @@
-{{define "items"}}{{template "layout" .}}{{end}}
-
-{{define "content"}}
+{{define "items"}}
+{{template "html-start" .}}
 <form id="filters"
       class="shop"
       hx-get="/items"
@@ -45,4 +44,5 @@
     {{template "detail-empty" .}}
   </aside>
 </form>
+{{template "html-end" .}}
 {{end}}

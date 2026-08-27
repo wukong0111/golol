@@ -1,0 +1,24 @@
+{{define "champion-grid"}}
+<div id="champion-grid">
+  <div class="grid-meta">{{if eq .Count 1}}1 campeón{{else}}{{.Count}} campeones{{end}}</div>
+  {{if eq .Count 0}}
+  <p class="empty">Ningún campeón combina esos roles. Prueba a quitar algún check.</p>
+  {{else}}
+  <div class="champ-grid">
+    {{range .Champions}}
+    <button type="button"
+            class="champ"
+            title="{{.Name}}"
+            hx-get="/champions/{{.ID}}"
+            hx-target="#champion-detail"
+            hx-swap="innerHTML"
+            hx-push-url="false"
+            hx-on::after-request="document.querySelectorAll('.champ.is-on').forEach(el=>el.classList.remove('is-on')); this.classList.add('is-on')">
+      <img src="{{.IconURL}}" alt="{{.Name}}" width="64" height="64" loading="lazy">
+      <span class="champ-name">{{.Name}}</span>
+    </button>
+    {{end}}
+  </div>
+  {{end}}
+</div>
+{{end}}

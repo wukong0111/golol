@@ -9,47 +9,63 @@ import (
 	"sort"
 )
 
-// Store loads item.json from disk when present, otherwise from the CDN.
+// Store loads Data Dragon JSON from disk when present, otherwise from the CDN.
 type Store struct {
 	Client *Client
 	Dir    string
 }
 
-// Load returns the latest catalog JSON. On a CDN failure it falls back to the
-// newest patch already cached on disk, if any.
-func (s *Store) Load(ctx context.Context, locale string) (version string, raw []byte, err error) {
-	version, err = s.Client.LatestVersion(ctx)
-	if err != nil {
-		cachedVersion, cached, cacheErr := s.latestCached(locale)
-		if cacheErr != nil {
-			return "", nil, fmt.Errorf("ddragon version: %w (cache: %v)", err, cacheErr)
-		}
-		return cachedVersion, cached, nil
-	}
-
-	raw, err = s.loadPatch(ctx, version, locale)
-	if err != nil {
-		cachedVersion, cached, cacheErr := s.latestCached(locale)
-		if cacheErr != nil {
-			return "", nil, fmt.Errorf("ddragon items %s: %w (cache: %v)", version, err, cacheErr)
-		}
-		return cachedVersion, cached, nil
-	}
-	return version, raw, nil
+// Snapshot is one patch's item.json + championFull.json.
+type Snapshot struct {
+	Version   string
+	Items     []byte
+	Champions []byte
 }
 
-func (s *Store) loadPatch(ctx context.Context, version, locale string) ([]byte, error) {
-	path := s.itemPath(version, locale)
+// Load returns the latest items and champions JSON for the same patch.
+// On a CDN failure it falls back to the newest patch already cached on disk
+// that has both files.
+func (s *Store) Load(ctx context.Context, locale string) (Snapshot, error) {
+	version, err := s.Client.LatestVersion(ctx)
+	if err != nil {
+		snap, cacheErr := s.latestCached(locale)
+		if cacheErr != nil {
+			return Snapshot{}, fmt.Errorf("ddragon version: %w (cache: %v)", err, cacheErr)
+		}
+		return snap, nil
+	}
+
+	items, err := s.loadPatch(ctx, version, locale, ItemsFile)
+	if err != nil {
+		snap, cacheErr := s.latestCached(locale)
+		if cacheErr != nil {
+			return Snapshot{}, fmt.Errorf("ddragon items %s: %w (cache: %v)", version, err, cacheErr)
+		}
+		return snap, nil
+	}
+	champions, err := s.loadPatch(ctx, version, locale, ChampionsFile)
+	if err != nil {
+		snap, cacheErr := s.latestCached(locale)
+		if cacheErr != nil {
+			return Snapshot{}, fmt.Errorf("ddragon champions %s: %w (cache: %v)", version, err, cacheErr)
+		}
+		return snap, nil
+	}
+	return Snapshot{Version: version, Items: items, Champions: champions}, nil
+}
+
+func (s *Store) loadPatch(ctx context.Context, version, locale, filename string) ([]byte, error) {
+	path := s.filePath(version, locale, filename)
 	if data, err := os.ReadFile(path); err == nil && len(data) > 0 && json.Valid(data) {
 		return data, nil
 	}
 
-	data, err := s.Client.FetchItems(ctx, version, locale)
+	data, err := s.fetch(ctx, version, locale, filename)
 	if err != nil {
 		return nil, err
 	}
 	if !json.Valid(data) {
-		return nil, fmt.Errorf("item.json for %s is not valid JSON", version)
+		return nil, fmt.Errorf("%s for %s is not valid JSON", filename, version)
 	}
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
 		_ = os.WriteFile(path, data, 0o644)
@@ -57,10 +73,21 @@ func (s *Store) loadPatch(ctx context.Context, version, locale string) ([]byte, 
 	return data, nil
 }
 
-func (s *Store) latestCached(locale string) (string, []byte, error) {
+func (s *Store) fetch(ctx context.Context, version, locale, filename string) ([]byte, error) {
+	switch filename {
+	case ItemsFile:
+		return s.Client.FetchItems(ctx, version, locale)
+	case ChampionsFile:
+		return s.Client.FetchChampions(ctx, version, locale)
+	default:
+		return nil, fmt.Errorf("unknown ddragon file %s", filename)
+	}
+}
+
+func (s *Store) latestCached(locale string) (Snapshot, error) {
 	entries, err := os.ReadDir(s.Dir)
 	if err != nil {
-		return "", nil, err
+		return Snapshot{}, err
 	}
 	var versions []string
 	for _, e := range entries {
@@ -70,14 +97,19 @@ func (s *Store) latestCached(locale string) (string, []byte, error) {
 	}
 	sort.Sort(sort.Reverse(sort.StringSlice(versions)))
 	for _, version := range versions {
-		data, err := os.ReadFile(s.itemPath(version, locale))
-		if err == nil && len(data) > 0 && json.Valid(data) {
-			return version, data, nil
+		items, err := os.ReadFile(s.filePath(version, locale, ItemsFile))
+		if err != nil || len(items) == 0 || !json.Valid(items) {
+			continue
 		}
+		champions, err := os.ReadFile(s.filePath(version, locale, ChampionsFile))
+		if err != nil || len(champions) == 0 || !json.Valid(champions) {
+			continue
+		}
+		return Snapshot{Version: version, Items: items, Champions: champions}, nil
 	}
-	return "", nil, fmt.Errorf("no cached item.json for %s", locale)
+	return Snapshot{}, fmt.Errorf("no cached item.json+championFull.json for %s", locale)
 }
 
-func (s *Store) itemPath(version, locale string) string {
-	return filepath.Join(s.Dir, version, locale, "item.json")
+func (s *Store) filePath(version, locale, filename string) string {
+	return filepath.Join(s.Dir, version, locale, filename)
 }

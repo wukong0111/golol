@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"golol/internal/champions"
 	"golol/internal/ddragon"
 	"golol/internal/httpx"
 	"golol/internal/items"
@@ -35,16 +36,20 @@ func run() error {
 		Dir:    cacheDir,
 	}
 
-	version, raw, err := store.Load(ctx, locale)
+	snap, err := store.Load(ctx, locale)
 	if err != nil {
 		return err
 	}
-	cat, err := items.Parse(version, locale, ddragon.DefaultBaseURL, raw)
+	cat, err := items.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Items)
+	if err != nil {
+		return err
+	}
+	champs, err := champions.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Champions)
 	if err != nil {
 		return err
 	}
 
-	app, err := httpx.New(cat)
+	app, err := httpx.New(cat, champs)
 	if err != nil {
 		return err
 	}
@@ -60,7 +65,7 @@ func run() error {
 
 	errCh := make(chan error, 1)
 	go func() {
-		log.Printf("golol en http://localhost%s — parche %s, %d objetos (%s)", addr, cat.Version, len(cat.Items), locale)
+		log.Printf("golol en http://localhost%s — parche %s, %d objetos, %d campeones (%s)", addr, cat.Version, len(cat.Items), len(champs.Champions), locale)
 		if err := httpSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			errCh <- err
 			stop()
@@ -97,19 +102,24 @@ func refresh(ctx context.Context, store *ddragon.Store, srv *httpx.Server, local
 			return
 		case <-ticker.C:
 			loadCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
-			version, raw, err := store.Load(loadCtx, locale)
+			snap, err := store.Load(loadCtx, locale)
 			cancel()
 			if err != nil {
 				log.Printf("refresh Data Dragon: %v", err)
 				continue
 			}
-			cat, err := items.Parse(version, locale, ddragon.DefaultBaseURL, raw)
-			if err != nil {
-				log.Printf("refresh parse: %v", err)
-				continue
+			if cat, err := items.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Items); err != nil {
+				log.Printf("refresh parse items: %v", err)
+			} else {
+				srv.SetCatalog(cat)
+				log.Printf("catálogo de objetos actualizado: parche %s (%d objetos)", cat.Version, len(cat.Items))
 			}
-			srv.SetCatalog(cat)
-			log.Printf("catálogo actualizado: parche %s (%d objetos)", cat.Version, len(cat.Items))
+			if cat, err := champions.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Champions); err != nil {
+				log.Printf("refresh parse champions: %v", err)
+			} else {
+				srv.SetChampions(cat)
+				log.Printf("catálogo de campeones actualizado: parche %s (%d campeones)", cat.Version, len(cat.Champions))
+			}
 		}
 	}
 }

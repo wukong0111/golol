@@ -13,6 +13,8 @@ import (
 const (
 	DefaultBaseURL = "https://ddragon.leagueoflegends.com"
 	UserAgent      = "golol/1.0"
+	ItemsFile      = "item.json"
+	ChampionsFile  = "championFull.json"
 )
 
 // Client fetches static Data Dragon payloads. No Riot API key is required.
@@ -49,7 +51,13 @@ func (c *Client) LatestVersion(ctx context.Context) (string, error) {
 
 // FetchItems downloads item.json for a patch and locale.
 func (c *Client) FetchItems(ctx context.Context, version, locale string) ([]byte, error) {
-	url := fmt.Sprintf("%s/cdn/%s/data/%s/item.json", c.BaseURL, version, locale)
+	url := fmt.Sprintf("%s/cdn/%s/data/%s/%s", c.BaseURL, version, locale, ItemsFile)
+	return c.get(ctx, url)
+}
+
+// FetchChampions downloads championFull.json for a patch and locale.
+func (c *Client) FetchChampions(ctx context.Context, version, locale string) ([]byte, error) {
+	url := fmt.Sprintf("%s/cdn/%s/data/%s/%s", c.BaseURL, version, locale, ChampionsFile)
 	return c.get(ctx, url)
 }
 
@@ -84,8 +92,31 @@ func (c *Client) http() *http.Client {
 	return http.DefaultClient
 }
 
+func cdnBase(baseURL string) string {
+	return strings.TrimRight(baseURL, "/")
+}
+
 // IconURL is the CDN path for an item icon.
 func IconURL(baseURL, version, imageFull string) string {
-	base := strings.TrimRight(baseURL, "/")
-	return fmt.Sprintf("%s/cdn/%s/img/item/%s", base, version, imageFull)
+	return fmt.Sprintf("%s/cdn/%s/img/item/%s", cdnBase(baseURL), version, imageFull)
+}
+
+// ChampionIconURL is the square portrait used in the grid.
+func ChampionIconURL(baseURL, version, imageFull string) string {
+	return fmt.Sprintf("%s/cdn/%s/img/champion/%s", cdnBase(baseURL), version, imageFull)
+}
+
+// SplashURL is the default-skin splash. It is not versioned on the CDN.
+func SplashURL(baseURL, championID string) string {
+	return fmt.Sprintf("%s/cdn/img/champion/splash/%s_0.jpg", cdnBase(baseURL), championID)
+}
+
+// SpellIconURL is the CDN path for a Q/W/E/R icon.
+func SpellIconURL(baseURL, version, imageFull string) string {
+	return fmt.Sprintf("%s/cdn/%s/img/spell/%s", cdnBase(baseURL), version, imageFull)
+}
+
+// PassiveIconURL is the CDN path for the innate ability icon.
+func PassiveIconURL(baseURL, version, imageFull string) string {
+	return fmt.Sprintf("%s/cdn/%s/img/passive/%s", cdnBase(baseURL), version, imageFull)
 }
