@@ -22,11 +22,19 @@ func TestFilterSingleRole(t *testing.T) {
 	}
 }
 
-func TestFilterOR(t *testing.T) {
+func TestFilterAND(t *testing.T) {
 	cat := sampleRoster(t)
 	got := Filter(cat.Champions, []Role{RoleFighter, RoleMage})
-	if len(got) != 2 {
-		t.Fatalf("OR should keep both, got %+v", got)
+	if len(got) != 0 {
+		t.Fatalf("AND of disjoint roles should be empty, got %+v", got)
+	}
+	got = Filter(cat.Champions, []Role{RoleFighter, RoleTank})
+	if len(got) != 1 || got[0].ID != "Aatrox" {
+		t.Fatalf("fighter+tank: %+v", got)
+	}
+	got = Filter(cat.Champions, []Role{RoleMage, RoleAssassin})
+	if len(got) != 1 || got[0].ID != "Ahri" {
+		t.Fatalf("mage+assassin: %+v", got)
 	}
 }
 

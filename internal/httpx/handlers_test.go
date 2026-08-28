@@ -284,14 +284,29 @@ func TestChampionsHTMXPartial(t *testing.T) {
 	}
 }
 
-func TestChampionsRoleOR(t *testing.T) {
+func TestChampionsRoleAND(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/champions?role=fighter&role=mage", nil)
 	req.Header.Set("HX-Request", "true")
 	rec := httptest.NewRecorder()
 	testHandler(t).ServeHTTP(rec, req)
 	body := rec.Body.String()
-	if !strings.Contains(body, "Aatrox") || !strings.Contains(body, "Ahri") {
-		t.Fatalf("OR leaked: %s", body)
+	if strings.Contains(body, "Aatrox") || strings.Contains(body, "Ahri") {
+		t.Fatalf("AND leaked: %s", body)
+	}
+	if !strings.Contains(body, "Ningún campeón combina esos roles") {
+		t.Fatalf("empty copy missing: %s", body)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/champions?role=fighter&role=tank", nil)
+	req.Header.Set("HX-Request", "true")
+	rec = httptest.NewRecorder()
+	testHandler(t).ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, "Aatrox") {
+		t.Fatal("fighter+tank should keep Aatrox")
+	}
+	if strings.Contains(body, "Ahri") {
+		t.Fatal("Ahri should be filtered out")
 	}
 }
 

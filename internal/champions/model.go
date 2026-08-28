@@ -33,15 +33,15 @@ func (c Champion) HasRole(role Role) bool {
 }
 
 // Matches reports whether the champion belongs in the current checkbox set.
-// An empty set matches everyone (OR of nothing would otherwise hide the roster).
+// An empty set matches everyone; otherwise the champion must have every role.
 func (c Champion) Matches(roles []Role) bool {
 	if len(roles) == 0 {
 		return true
 	}
 	for _, role := range roles {
-		if c.HasRole(role) {
-			return true
+		if !c.HasRole(role) {
+			return false
 		}
 	}
-	return false
+	return true
 }
