@@ -81,6 +81,9 @@ func TestParseRoster(t *testing.T) {
 	if len(aatrox.Spells) != 1 || aatrox.Spells[0].Key != "Q" || aatrox.Spells[0].Cooldown != "14/12/10/8/6" {
 		t.Fatalf("spells: %+v", aatrox.Spells)
 	}
+	if aatrox.Spells[0].Cost != "" || aatrox.Spells[0].Range != "" {
+		t.Fatalf("empty meta: %+v", aatrox.Spells[0])
+	}
 
 	ahri, ok := cat.Get("Ahri")
 	if !ok {
@@ -88,6 +91,43 @@ func TestParseRoster(t *testing.T) {
 	}
 	if len(ahri.Spells) != 4 || ahri.Spells[3].Key != "R" {
 		t.Fatalf("ahri kit: %+v", ahri.Spells)
+	}
+}
+
+func TestParseSpellCostAndRange(t *testing.T) {
+	raw := []byte(`{
+		"type":"champion","version":"16.16.1",
+		"data":{
+			"Ahri":{
+				"id":"Ahri","name":"Ahri","partype":"Maná","tags":["Mage"],
+				"image":{"full":"Ahri.png"},
+				"passive":{"name":"P","description":"p","image":{"full":"P.png"}},
+				"spells":[
+					{"id":"AhriQ","name":"Orbe","description":"q","cooldownBurn":"7",
+					 "costBurn":"55/65/75/85/95","resource":"{{ cost }} {{ abilityresourcename }}",
+					 "rangeBurn":"970","image":{"full":"AhriQ.png"}},
+					{"id":"AhriW","name":"Fuego","description":"w","cooldownBurn":"9",
+					 "costBurn":"0","resource":"Sin coste","rangeBurn":"25000","image":{"full":"AhriW.png"}}
+				]
+			}
+		}
+	}`)
+	cat, err := Parse("16.16.1", "es_ES", ddragon.DefaultBaseURL, raw)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ahri, _ := cat.Get("Ahri")
+	if ahri.Spells[0].Cost != "55/65/75/85/95 Maná" {
+		t.Fatalf("cost: %q", ahri.Spells[0].Cost)
+	}
+	if ahri.Spells[0].Range != "970" {
+		t.Fatalf("range: %q", ahri.Spells[0].Range)
+	}
+	if ahri.Spells[1].Cost != "Sin coste" {
+		t.Fatalf("no cost: %q", ahri.Spells[1].Cost)
+	}
+	if ahri.Spells[1].Range != "" {
+		t.Fatalf("dummy range leaked: %q", ahri.Spells[1].Range)
 	}
 }
 

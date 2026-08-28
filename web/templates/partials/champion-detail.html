@@ -1,3 +1,18 @@
+{{define "spell-scale"}}
+{{if .Scaling}}
+<table class="spell-scale">
+  <tbody>
+    {{range .Scaling}}
+    <tr>
+      <th>{{.Label}}</th>
+      <td>{{.Text}}</td>
+    </tr>
+    {{end}}
+  </tbody>
+</table>
+{{end}}
+{{end}}
+
 {{define "champion-detail-empty"}}
 <div class="detail-placeholder">
   <p>Selecciona un campeón para ver su splash y sus habilidades.</p>
@@ -35,10 +50,24 @@
           {{if .IconURL}}<img src="{{.IconURL}}" alt="" width="48" height="48">{{end}}
           <div>
             <h3>{{.Name}}</h3>
-            {{if and .Cooldown (ne .Cooldown "0")}}<p class="spell-cd">{{.Cooldown}} s</p>{{end}}
+            {{if or .Cooldown .Cost .Range}}
+            <ul class="spell-meta">
+              {{if .Cooldown}}<li>CD {{.Cooldown}} s</li>{{end}}
+              {{if .Cost}}<li>{{.Cost}}</li>{{end}}
+              {{if .Range}}<li>Alcance {{.Range}}</li>{{end}}
+            </ul>
+            {{end}}
           </div>
         </div>
         <div class="desc">{{.HTML}}</div>
+        {{if .Forms}}
+          {{range .Forms}}
+            {{if .Name}}<h4 class="spell-form">{{.Name}}</h4>{{end}}
+            {{template "spell-scale" .}}
+          {{end}}
+        {{else}}
+          {{template "spell-scale" .}}
+        {{end}}
       </li>
       {{end}}
     </ul>

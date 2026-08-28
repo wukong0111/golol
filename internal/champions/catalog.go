@@ -48,6 +48,7 @@ func Parse(version, locale, cdnBase string, raw []byte) (*Catalog, error) {
 			image = id + ".png"
 		}
 		roles, labels := rolesFromTags(src.Tags)
+		partype := strings.TrimSpace(src.Partype)
 		ch := Champion{
 			ID:         id,
 			Name:       name,
@@ -57,7 +58,7 @@ func Parse(version, locale, cdnBase string, raw []byte) (*Catalog, error) {
 			IconURL:    ddragon.ChampionIconURL(cdnBase, version, image),
 			SplashURL:  ddragon.SplashURL(cdnBase, id),
 			Passive:    parsePassive(cdnBase, version, src.Passive),
-			Spells:     parseSpells(cdnBase, version, src.Spells),
+			Spells:     parseSpells(cdnBase, version, src.Spells, partype),
 		}
 		cat.Champions = append(cat.Champions, ch)
 		cat.ByID[id] = ch
@@ -81,7 +82,7 @@ func parsePassive(cdnBase, version string, src ddragon.Passive) Ability {
 	}
 }
 
-func parseSpells(cdnBase, version string, src []ddragon.Spell) []Ability {
+func parseSpells(cdnBase, version string, src []ddragon.Spell, partype string) []Ability {
 	out := make([]Ability, 0, len(src))
 	for i, sp := range src {
 		key := ""
@@ -94,10 +95,81 @@ func parseSpells(cdnBase, version string, src []ddragon.Spell) []Ability {
 			Name:        strings.TrimSpace(sp.Name),
 			Description: sp.Description,
 			IconURL:     ddragon.SpellIconURL(cdnBase, version, image),
-			Cooldown:    strings.TrimSpace(sp.CooldownBurn),
+			Cooldown:    burnStat(sp.CooldownBurn),
+			Cost:        spellCost(sp, partype),
+			Range:       spellRange(sp.RangeBurn),
 		})
 	}
 	return out
+}
+
+func burnStat(s string) string {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "0" {
+		return ""
+	}
+	return s
+}
+
+func spellCost(sp ddragon.Spell, partype string) string {
+	if strings.EqualFold(strings.TrimSpace(sp.Resource), "Sin coste") ||
+		strings.EqualFold(strings.TrimSpace(sp.CostType), "Sin coste") {
+		return "Sin coste"
+	}
+	cost := strings.TrimSpace(sp.CostBurn)
+	if isZeroBurn(cost) {
+		return ""
+	}
+	resource := interpolateResource(sp.Resource, cost, partype)
+	if resource != "" {
+		return resource
+	}
+	costType := interpolateResource(sp.CostType, cost, partype)
+	if costType != "" {
+		return costType
+	}
+	if partype != "" && !strings.EqualFold(partype, "Nada") {
+		return cost + " " + partype
+	}
+	return cost
+}
+
+func spellRange(burn string) string {
+	burn = strings.TrimSpace(burn)
+	if burn == "" || burn == "0" || burn == "25000" {
+		return ""
+	}
+	return burn
+}
+
+func interpolateResource(raw, costBurn, partype string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	s = strings.ReplaceAll(s, "{{ cost }}", strings.TrimSpace(costBurn))
+	s = strings.ReplaceAll(s, "{{cost}}", strings.TrimSpace(costBurn))
+	s = strings.ReplaceAll(s, "{{ abilityresourcename }}", partype)
+	s = strings.ReplaceAll(s, "{{abilityresourcename}}", partype)
+	s = strings.ReplaceAll(s, "@AbilityResourceName@", partype)
+	s = strings.Join(strings.Fields(s), " ")
+	if isZeroBurn(s) {
+		return ""
+	}
+	return s
+}
+
+func isZeroBurn(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" || s == "0" {
+		return true
+	}
+	for _, part := range strings.Split(s, "/") {
+		if strings.TrimSpace(part) != "0" {
+			return false
+		}
+	}
+	return true
 }
 
 // Get returns a champion by Data Dragon id.

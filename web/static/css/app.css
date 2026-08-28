@@ -349,17 +349,165 @@ body {
   line-height: 1.5;
 }
 
-.champ-page {
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
 .champ-shop {
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+.champ-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.champ-shop .main-pane {
+  min-height: 0;
+  padding: 0;
+}
+
+.champ-roster {
+  scroll-margin-top: 12px;
+}
+
+.champ-roster-toggle {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  color: var(--gold-bright);
+}
+
+.champ-roster-toggle::-webkit-details-marker,
+.champ-roster-toggle::marker {
+  display: none;
+  content: "";
+}
+
+.champ-roster-toggle:hover {
+  background: rgb(200 170 110 / 8%);
+}
+
+.champ-roster-toggle:focus-visible {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: -2px;
+}
+
+.roster-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1;
+  font-family: Marcellus, Georgia, serif;
+  font-size: 16px;
+  color: var(--gold-bright);
+}
+
+#roster-pick-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.roster-pick img {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--gold);
+  flex: none;
+}
+
+.roster-pick[hidden] {
+  display: none;
+}
+
+.roster-fallback {
+  font-family: Marcellus, Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--gold);
+}
+
+.champ-roster.has-pick .roster-fallback {
+  display: none;
+}
+
+.roster-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  color: var(--gold);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.lbl-hide,
+.lbl-change {
+  display: none;
+}
+
+.champ-roster[open] .lbl-show {
+  display: none;
+}
+
+.champ-roster[open] .lbl-hide {
+  display: inline;
+}
+
+.champ-roster.has-pick:not([open]) .lbl-show {
+  display: none;
+}
+
+.champ-roster.has-pick:not([open]) .lbl-change {
+  display: inline;
+}
+
+.roster-chevron {
+  width: 7px;
+  height: 7px;
+  border-right: 2px solid var(--gold);
+  border-bottom: 2px solid var(--gold);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+  margin-top: -4px;
+}
+
+.champ-roster[open] .roster-chevron {
+  transform: rotate(-135deg);
+  margin-top: 2px;
+}
+
+.champ-roster #champion-grid {
+  padding: 8px 12px 12px;
+  border-top: 1px solid var(--line);
+}
+
+.champ-roster[open] #champion-grid {
+  max-height: min(48vh, 28rem);
+  overflow-y: auto;
+}
+
+.champ-roster .grid-meta {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  margin: 0 0 10px;
+  padding: 4px 0 6px;
+  background: linear-gradient(180deg, #0d1a2a 70%, rgb(13 26 42 / 0%));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roster-chevron {
+    transition: none;
+  }
 }
 
 .champ-grid {
@@ -524,6 +672,53 @@ body {
   margin: 2px 0 0;
   color: var(--muted);
   font-size: 12px;
+}
+
+.spell-meta {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.spell-form {
+  margin: 12px 0 6px;
+  font-family: Marcellus, Georgia, serif;
+  color: var(--gold-bright);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.04em;
+}
+
+.spell-scale {
+  width: 100%;
+  margin: 10px 0 0;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.spell-scale th,
+.spell-scale td {
+  padding: 5px 0;
+  border-top: 1px solid rgb(60 60 65 / 55%);
+  vertical-align: top;
+}
+
+.spell-scale th {
+  width: 38%;
+  padding-right: 12px;
+  color: var(--gold);
+  font-weight: 600;
+  text-align: left;
+}
+
+.spell-scale td {
+  color: var(--gold-bright);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 960px) {

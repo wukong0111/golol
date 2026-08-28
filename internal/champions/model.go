@@ -20,6 +20,22 @@ type Ability struct {
 	Description string
 	IconURL     string
 	Cooldown    string
+	Cost        string
+	Range       string
+	Scaling     []ScaleRow
+	Forms       []AbilityForm
+}
+
+// AbilityForm is a second shape of the same slot (Gnar mini/mega, Nidalee, …).
+type AbilityForm struct {
+	Name    string
+	Scaling []ScaleRow
+}
+
+// ScaleRow is one stat that changes with ability rank (or champion level).
+type ScaleRow struct {
+	Label string
+	Text  string
 }
 
 // HasRole reports whether the champion carries the given class tag.

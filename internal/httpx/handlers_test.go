@@ -65,7 +65,7 @@ func testChampCatalog(t *testing.T) *champions.Catalog {
 				"image":{"full":"Aatrox.png"},
 				"passive":{"name":"Aspecto de la muerte","description":"<healing>cura</healing>","image":{"full":"Aatrox_Passive.png"}},
 				"spells":[
-					{"id":"AatroxQ","name":"La Espada de los Oscuros","description":"<physicalDamage>golpe</physicalDamage>","cooldownBurn":"14/12/10/8/6","image":{"full":"AatroxQ.png"}},
+					{"id":"AatroxQ","name":"La Espada de los Oscuros","description":"<physicalDamage>golpe</physicalDamage>","cooldownBurn":"14/12/10/8/6","costBurn":"0","resource":"Sin coste","rangeBurn":"25000","image":{"full":"AatroxQ.png"}},
 					{"id":"AatroxW","name":"Cadenas infernales","description":"cadena","cooldownBurn":"20","image":{"full":"AatroxW.png"}},
 					{"id":"AatroxE","name":"Deslizamiento sombrío","description":"dash","cooldownBurn":"9","image":{"full":"AatroxE.png"}},
 					{"id":"AatroxR","name":"El Aniquilador de mundos","description":"<script>alert(1)</script>ulti","cooldownBurn":"120/100/80","image":{"full":"AatroxR.png"}}
@@ -84,6 +84,31 @@ func testChampCatalog(t *testing.T) *champions.Catalog {
 	}`)
 	cat, err := champions.Parse("16.16.1", "es_ES", ddragon.DefaultBaseURL, raw)
 	if err != nil {
+		t.Fatal(err)
+	}
+	if err := cat.ApplyKits([]byte(`{
+		"Aatrox":{
+			"key":"Aatrox",
+			"abilities":{
+				"P":[{
+					"name":"Deathbringer Stance",
+					"effects":[{"description":"deal bonus magic damage equal to 4% : 8% (based on level) of the target's maximum health"}]
+				}],
+				"Q":[{
+					"name":"The Darkin Blade",
+					"effects":[{
+						"leveling":[{
+							"attribute":"Physical Damage",
+							"modifiers":[
+								{"values":[10,25,40,55,70],"units":["","","","",""]},
+								{"values":[60,67.5,75,82.5,90],"units":["% AD","% AD","% AD","% AD","% AD"]}
+							]
+						}]
+					}]
+				}]
+			}
+		}
+	}`)); err != nil {
 		t.Fatal(err)
 	}
 	return cat
@@ -262,6 +287,12 @@ func TestChampionsPage(t *testing.T) {
 	if !strings.Contains(body, `href="/champions" class="is-on"`) {
 		t.Fatal("champions nav should be active")
 	}
+	if !strings.Contains(body, `id="champ-roster"`) {
+		t.Fatal("roster disclosure missing")
+	}
+	if !strings.Contains(body, "Mostrar") || !strings.Contains(body, "Ocultar") || !strings.Contains(body, "Cambiar") {
+		t.Fatal("roster toggle labels missing")
+	}
 }
 
 func TestChampionsHTMXPartial(t *testing.T) {
@@ -344,6 +375,13 @@ func TestChampionDetail(t *testing.T) {
 		`class="physicaldamage"`,
 		"Luchador",
 		"Tanque",
+		"Sin coste",
+		"Daño físico",
+		"10 / 25 / 40 / 55 / 70",
+		"90% DA",
+		"Daño mágico",
+		"4% – 8%",
+		"vida máxima del objetivo",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in detail", want)

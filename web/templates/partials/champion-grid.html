@@ -13,7 +13,7 @@
             hx-target="#champion-detail"
             hx-swap="innerHTML"
             hx-push-url="false"
-            hx-on::after-request="document.querySelectorAll('.champ.is-on').forEach(el=>el.classList.remove('is-on')); this.classList.add('is-on')">
+            hx-on::after-swap="gololPickChamp(this)">
       <img src="{{.IconURL}}" alt="{{.Name}}" width="64" height="64" loading="lazy">
       <span class="champ-name">{{.Name}}</span>
     </button>

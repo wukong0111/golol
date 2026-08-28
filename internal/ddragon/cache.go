@@ -113,3 +113,39 @@ func (s *Store) latestCached(locale string) (Snapshot, error) {
 func (s *Store) filePath(version, locale, filename string) string {
 	return filepath.Join(s.Dir, version, locale, filename)
 }
+
+func (s *Store) merakiPath() string {
+	return filepath.Join(s.Dir, MerakiFile)
+}
+
+// LoadMeraki returns cached ability numbers, or downloads them on a cache miss.
+func (s *Store) LoadMeraki(ctx context.Context) ([]byte, error) {
+	path := s.merakiPath()
+	if data, err := os.ReadFile(path); err == nil && len(data) > 0 && json.Valid(data) {
+		return data, nil
+	}
+	return s.fetchMeraki(ctx)
+}
+
+// RefreshMeraki downloads a fresh dump and replaces the cache.
+func (s *Store) RefreshMeraki(ctx context.Context) ([]byte, error) {
+	return s.fetchMeraki(ctx)
+}
+
+func (s *Store) fetchMeraki(ctx context.Context) ([]byte, error) {
+	data, err := s.Client.FetchMeraki(ctx)
+	if err != nil {
+		cached, cacheErr := os.ReadFile(s.merakiPath())
+		if cacheErr == nil && len(cached) > 0 && json.Valid(cached) {
+			return cached, nil
+		}
+		return nil, fmt.Errorf("meraki champions: %w", err)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("meraki champions is not valid JSON")
+	}
+	if err := os.MkdirAll(filepath.Dir(s.merakiPath()), 0o755); err == nil {
+		_ = os.WriteFile(s.merakiPath(), data, 0o644)
+	}
+	return data, nil
+}

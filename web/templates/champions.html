@@ -8,7 +8,8 @@
         hx-swap="innerHTML"
         hx-push-url="true"
         hx-trigger="change"
-        hx-sync="this:replace">
+        hx-sync="this:replace"
+        hx-on::after-swap="gololOpenRoster()">
 
     <aside class="stats-pane">
       <div class="pane-head">
@@ -29,14 +30,77 @@
       </ul>
     </aside>
 
-    <section class="main-pane">
-      {{template "champion-grid" .}}
-    </section>
-  </form>
+    <div class="champ-col">
+      <section class="main-pane">
+        <details id="champ-roster" class="champ-roster" open>
+          <summary class="champ-roster-toggle">
+            <span id="roster-pick" class="roster-pick" hidden>
+              <img id="roster-pick-icon" alt="" width="32" height="32">
+              <span id="roster-pick-name"></span>
+            </span>
+            <span class="roster-fallback">Campeones</span>
+            <span class="roster-action">
+              <span class="lbl-show">Mostrar</span>
+              <span class="lbl-hide">Ocultar</span>
+              <span class="lbl-change">Cambiar</span>
+              <span class="roster-chevron" aria-hidden="true"></span>
+            </span>
+          </summary>
+          {{template "champion-grid" .}}
+        </details>
+      </section>
 
-  <aside id="champion-detail" class="champ-detail-pane">
-    {{template "champion-detail-empty" .}}
-  </aside>
+      <aside id="champion-detail" class="champ-detail-pane">
+        {{template "champion-detail-empty" .}}
+      </aside>
+    </div>
+  </form>
 </div>
+<script>
+(function () {
+  var roster = document.getElementById("champ-roster");
+  if (!roster) return;
+
+  roster.addEventListener("toggle", function () {
+    if (!roster.open) return;
+    var on = roster.querySelector(".champ.is-on");
+    if (on) on.scrollIntoView({ block: "nearest" });
+  });
+
+  window.gololPickChamp = function (btn) {
+    document.querySelectorAll(".champ.is-on").forEach(function (el) {
+      el.classList.remove("is-on");
+    });
+    btn.classList.add("is-on");
+    roster.classList.add("has-pick");
+    roster.open = false;
+
+    var src = btn.querySelector("img");
+    var icon = document.getElementById("roster-pick-icon");
+    var name = document.getElementById("roster-pick-name");
+    var pick = document.getElementById("roster-pick");
+    if (src && icon) {
+      icon.src = src.src;
+      icon.alt = "";
+    }
+    if (name) name.textContent = btn.getAttribute("title") || "";
+    if (pick) pick.hidden = false;
+
+    var heading = document.querySelector("#champion-detail h2");
+    if (heading) {
+      heading.setAttribute("tabindex", "-1");
+      heading.focus({ preventScroll: true });
+    } else {
+      var summary = roster.querySelector("summary");
+      if (summary) summary.focus({ preventScroll: true });
+    }
+    roster.scrollIntoView({ block: "start" });
+  };
+
+  window.gololOpenRoster = function () {
+    roster.open = true;
+  };
+})();
+</script>
 {{template "html-end" .}}
 {{end}}

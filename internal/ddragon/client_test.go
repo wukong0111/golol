@@ -2,6 +2,7 @@ package ddragon
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -156,5 +157,53 @@ func TestChampionAssetURLs(t *testing.T) {
 	passive := PassiveIconURL(DefaultBaseURL, "16.16.1", "Aatrox_Passive.png")
 	if passive != "https://ddragon.leagueoflegends.com/cdn/16.16.1/img/passive/Aatrox_Passive.png" {
 		t.Fatalf("passive: %s", passive)
+	}
+}
+
+func TestLoadMerakiUsesCache(t *testing.T) {
+	dir := t.TempDir()
+	payload := []byte(`{"Aatrox":{"key":"Aatrox"}}`)
+	if err := os.WriteFile(filepath.Join(dir, MerakiFile), payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	store := &Store{
+		Client: &Client{HTTPClient: http.DefaultClient, MerakiURL: "http://127.0.0.1:1/nope"},
+		Dir:    dir,
+	}
+	got, err := store.LoadMeraki(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(payload) {
+		t.Fatalf("cache miss: %s", got)
+	}
+}
+
+func TestLoadMerakiFetchesOnMiss(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"Ahri":{"key":"Ahri"}}`))
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+
+	dir := t.TempDir()
+	store := &Store{
+		Client: &Client{HTTPClient: ts.Client(), MerakiURL: ts.URL},
+		Dir:    dir,
+	}
+	got, err := store.LoadMeraki(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !json.Valid(got) || string(got) != `{"Ahri":{"key":"Ahri"}}` {
+		t.Fatalf("fetched: %s", got)
+	}
+	cached, err := os.ReadFile(filepath.Join(dir, MerakiFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(cached) != string(got) {
+		t.Fatalf("not written: %s", cached)
 	}
 }

@@ -48,6 +48,7 @@ type Champion struct {
 	Image   Image    `json:"image"`
 	Tags    []string `json:"tags"`
 	Blurb   string   `json:"blurb"`
+	Partype string   `json:"partype"`
 	Spells  []Spell  `json:"spells"`
 	Passive Passive  `json:"passive"`
 }
@@ -58,6 +59,11 @@ type Spell struct {
 	Name         string `json:"name"`
 	Description  string `json:"description"`
 	CooldownBurn string `json:"cooldownBurn"`
+	CostBurn     string `json:"costBurn"`
+	Resource     string `json:"resource"`
+	CostType     string `json:"costType"`
+	RangeBurn    string `json:"rangeBurn"`
+	MaxRank      int    `json:"maxrank"`
 	Image        Image  `json:"image"`
 }
 

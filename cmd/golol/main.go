@@ -48,6 +48,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if kits, kitErr := store.LoadMeraki(ctx); kitErr != nil {
+		log.Printf("kits de habilidades: %v", kitErr)
+	} else if err := champs.ApplyKits(kits); err != nil {
+		log.Printf("kits de habilidades: %v", err)
+	}
 
 	app, err := httpx.New(cat, champs)
 	if err != nil {
@@ -101,10 +106,10 @@ func refresh(ctx context.Context, store *ddragon.Store, srv *httpx.Server, local
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			loadCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+			loadCtx, cancel := context.WithTimeout(ctx, 45*time.Second)
 			snap, err := store.Load(loadCtx, locale)
-			cancel()
 			if err != nil {
+				cancel()
 				log.Printf("refresh Data Dragon: %v", err)
 				continue
 			}
@@ -117,9 +122,15 @@ func refresh(ctx context.Context, store *ddragon.Store, srv *httpx.Server, local
 			if cat, err := champions.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Champions); err != nil {
 				log.Printf("refresh parse champions: %v", err)
 			} else {
+				if kits, kitErr := store.RefreshMeraki(loadCtx); kitErr != nil {
+					log.Printf("refresh kits de habilidades: %v", kitErr)
+				} else if err := cat.ApplyKits(kits); err != nil {
+					log.Printf("refresh kits de habilidades: %v", err)
+				}
 				srv.SetChampions(cat)
 				log.Printf("catálogo de campeones actualizado: parche %s (%d campeones)", cat.Version, len(cat.Champions))
 			}
+			cancel()
 		}
 	}
 }

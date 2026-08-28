@@ -35,7 +35,11 @@ type abilityView struct {
 	Name     string
 	IconURL  string
 	Cooldown string
+	Cost     string
+	Range    string
 	HTML     template.HTML
+	Scaling  []champions.ScaleRow
+	Forms    []champions.AbilityForm
 }
 
 type champPage struct {
@@ -158,7 +162,11 @@ func (s *Server) abilityView(a champions.Ability) abilityView {
 		Name:     a.Name,
 		IconURL:  a.IconURL,
 		Cooldown: a.Cooldown,
+		Cost:     a.Cost,
+		Range:    a.Range,
 		HTML:     template.HTML(sanitizeDescription(s.policy, a.Description)),
+		Scaling:  a.Scaling,
+		Forms:    a.Forms,
 	}
 }
 
