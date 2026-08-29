@@ -114,38 +114,50 @@ func (s *Store) filePath(version, locale, filename string) string {
 	return filepath.Join(s.Dir, version, locale, filename)
 }
 
-func (s *Store) merakiPath() string {
-	return filepath.Join(s.Dir, MerakiFile)
+func (s *Store) merakiFile(name string) string {
+	return filepath.Join(s.Dir, name)
 }
 
 // LoadMeraki returns cached ability numbers, or downloads them on a cache miss.
 func (s *Store) LoadMeraki(ctx context.Context) ([]byte, error) {
-	path := s.merakiPath()
-	if data, err := os.ReadFile(path); err == nil && len(data) > 0 && json.Valid(data) {
-		return data, nil
-	}
-	return s.fetchMeraki(ctx)
+	return s.loadMerakiDump(ctx, MerakiFile, false, s.Client.FetchMeraki)
 }
 
 // RefreshMeraki downloads a fresh dump and replaces the cache.
 func (s *Store) RefreshMeraki(ctx context.Context) ([]byte, error) {
-	return s.fetchMeraki(ctx)
+	return s.loadMerakiDump(ctx, MerakiFile, true, s.Client.FetchMeraki)
 }
 
-func (s *Store) fetchMeraki(ctx context.Context) ([]byte, error) {
-	data, err := s.Client.FetchMeraki(ctx)
+// LoadMerakiItems returns cached shop classes, or downloads them on a cache miss.
+func (s *Store) LoadMerakiItems(ctx context.Context) ([]byte, error) {
+	return s.loadMerakiDump(ctx, MerakiItemsFile, false, s.Client.FetchMerakiItems)
+}
+
+// RefreshMerakiItems downloads a fresh item dump and replaces the cache.
+func (s *Store) RefreshMerakiItems(ctx context.Context) ([]byte, error) {
+	return s.loadMerakiDump(ctx, MerakiItemsFile, true, s.Client.FetchMerakiItems)
+}
+
+func (s *Store) loadMerakiDump(ctx context.Context, filename string, refresh bool, fetch func(context.Context) ([]byte, error)) ([]byte, error) {
+	path := s.merakiFile(filename)
+	if !refresh {
+		if data, err := os.ReadFile(path); err == nil && len(data) > 0 && json.Valid(data) {
+			return data, nil
+		}
+	}
+	data, err := fetch(ctx)
 	if err != nil {
-		cached, cacheErr := os.ReadFile(s.merakiPath())
+		cached, cacheErr := os.ReadFile(path)
 		if cacheErr == nil && len(cached) > 0 && json.Valid(cached) {
 			return cached, nil
 		}
-		return nil, fmt.Errorf("meraki champions: %w", err)
+		return nil, fmt.Errorf("meraki %s: %w", filename, err)
 	}
 	if !json.Valid(data) {
-		return nil, fmt.Errorf("meraki champions is not valid JSON")
+		return nil, fmt.Errorf("meraki %s is not valid JSON", filename)
 	}
-	if err := os.MkdirAll(filepath.Dir(s.merakiPath()), 0o755); err == nil {
-		_ = os.WriteFile(s.merakiPath(), data, 0o644)
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err == nil {
+		_ = os.WriteFile(path, data, 0o644)
 	}
 	return data, nil
 }

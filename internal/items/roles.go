@@ -40,25 +40,33 @@ func ParseRole(raw string) Role {
 	}
 }
 
-// roleOverrides replaces the tag heuristic for specific item IDs.
+// roleOverrides replaces shop tags and the tag heuristic for specific item IDs.
 // Empty by default; fill in if a well-known item lands in the wrong tab.
 var roleOverrides = map[string][]Role{}
 
 // MatchesRole reports whether the item belongs in the given class tab.
 // An item may match several roles. RoleAll matches everything.
+// Priority: roleOverrides, then Meraki shop.tags, then the Data Dragon tag heuristic.
 func (it Item) MatchesRole(role Role) bool {
 	if role == RoleAll {
 		return true
 	}
 	if roles, ok := roleOverrides[it.ID]; ok {
-		for _, r := range roles {
-			if r == role {
-				return true
-			}
-		}
-		return false
+		return containsRole(roles, role)
+	}
+	if len(it.ShopRoles) > 0 {
+		return containsRole(it.ShopRoles, role)
 	}
 	return it.inferredRoles()[role]
+}
+
+func containsRole(roles []Role, role Role) bool {
+	for _, r := range roles {
+		if r == role {
+			return true
+		}
+	}
+	return false
 }
 
 func (it Item) inferredRoles() map[Role]bool {

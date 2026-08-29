@@ -12,14 +12,14 @@ Selector de objetos y campeones de League of Legends. Go + HTMX, datos de [Data 
 make run
 ```
 
-Abre [http://localhost:8080/items](http://localhost:8080/items), [http://localhost:8080/champions](http://localhost:8080/champions) o [http://localhost:8080/builds](http://localhost:8080/builds). El primer arranque descarga `item.json` y `championFull.json` del CDN (sin API key) y los deja en `.cache/ddragon/`.
+Abre [http://localhost:8080/items](http://localhost:8080/items), [http://localhost:8080/champions](http://localhost:8080/champions) o [http://localhost:8080/builds](http://localhost:8080/builds). El primer arranque descarga `item.json` y `championFull.json` de Data Dragon (sin API key), y los dumps de Meraki para kits y clases de tienda, y los deja en `.cache/ddragon/`.
 
 | Variable | Default | Qué hace |
 |---|---|---|
 | `ADDR` | `:8080` | Dirección de escucha (gana a `PORT`) |
 | `PORT` | — | Puerto que inyecta Railway |
 | `DDRAGON_LOCALE` | `es_ES` | Locale de Data Dragon |
-| `CACHE_DIR` | `.cache/ddragon` | Cache de `item.json` y `championFull.json` |
+| `CACHE_DIR` | `.cache/ddragon` | Cache de Data Dragon y dumps de Meraki |
 | `SHUTDOWN_TIMEOUT` | `15s` (o draining de Railway − 1s) | Tiempo máximo para terminar requests al apagar |
 
 En SIGTERM/SIGINT el proceso deja `/health` en 503, deja de aceptar conexiones nuevas y espera a que acaben las que ya estaban en vuelo (`http.Server.Shutdown`). `railway.toml` configura el healthcheck y 15s de draining (Railway por defecto manda SIGKILL al instante).
@@ -32,7 +32,7 @@ make test
 
 ### Objetos (`/items`)
 
-- **Rol** (uno): Todos, Luchador, Tirador, Asesino, Mago, Tanque, Soporte. Data Dragon no trae clase; el rol se deriva de los `tags`.
+- **Rol** (uno): Todos, Luchador, Tirador, Asesino, Mago, Tanque, Soporte. Las clases salen de `shop.tags` de Meraki (el menú del cliente). Si Meraki no trae el objeto, se infieren de los `tags` de Data Dragon.
 - **Stats** (varios, AND): el objeto tiene que cumplir **todos** los checks marcados. Ejemplo: `/items?role=tank&stat=Armor&stat=SpellBlock`.
 
 Solo se listan objetos comprables en la Grieta del Invocador. Data Dragon marca clones de otros modos (ARAM `32xxxx`, prismáticos de Arena `66xxxx`, starters del Abismo) como mapa 11; esos IDs se descartan.

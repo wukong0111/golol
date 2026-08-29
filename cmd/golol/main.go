@@ -44,6 +44,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	if shop, shopErr := store.LoadMerakiItems(ctx); shopErr != nil {
+		log.Printf("roles de tienda: %v", shopErr)
+	} else if err := cat.ApplyShopRoles(shop); err != nil {
+		log.Printf("roles de tienda: %v", err)
+	}
 	champs, err := champions.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Champions)
 	if err != nil {
 		return err
@@ -116,6 +121,11 @@ func refresh(ctx context.Context, store *ddragon.Store, srv *httpx.Server, local
 			if cat, err := items.Parse(snap.Version, locale, ddragon.DefaultBaseURL, snap.Items); err != nil {
 				log.Printf("refresh parse items: %v", err)
 			} else {
+				if shop, shopErr := store.RefreshMerakiItems(loadCtx); shopErr != nil {
+					log.Printf("refresh roles de tienda: %v", shopErr)
+				} else if err := cat.ApplyShopRoles(shop); err != nil {
+					log.Printf("refresh roles de tienda: %v", err)
+				}
 				srv.SetCatalog(cat)
 				log.Printf("catálogo de objetos actualizado: parche %s (%d objetos)", cat.Version, len(cat.Items))
 			}

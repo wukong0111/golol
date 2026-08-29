@@ -207,3 +207,51 @@ func TestLoadMerakiFetchesOnMiss(t *testing.T) {
 		t.Fatalf("not written: %s", cached)
 	}
 }
+
+func TestLoadMerakiItemsUsesCache(t *testing.T) {
+	dir := t.TempDir()
+	payload := []byte(`{"3508":{"shop":{"tags":["MARKSMAN"]}}}`)
+	if err := os.WriteFile(filepath.Join(dir, MerakiItemsFile), payload, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	store := &Store{
+		Client: &Client{HTTPClient: http.DefaultClient, MerakiItemsURL: "http://127.0.0.1:1/nope"},
+		Dir:    dir,
+	}
+	got, err := store.LoadMerakiItems(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(payload) {
+		t.Fatalf("cache miss: %s", got)
+	}
+}
+
+func TestLoadMerakiItemsFetchesOnMiss(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"3508":{"shop":{"tags":["MARKSMAN"]}}}`))
+	})
+	ts := httptest.NewServer(mux)
+	t.Cleanup(ts.Close)
+
+	dir := t.TempDir()
+	store := &Store{
+		Client: &Client{HTTPClient: ts.Client(), MerakiItemsURL: ts.URL},
+		Dir:    dir,
+	}
+	got, err := store.LoadMerakiItems(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !json.Valid(got) || string(got) != `{"3508":{"shop":{"tags":["MARKSMAN"]}}}` {
+		t.Fatalf("fetched: %s", got)
+	}
+	cached, err := os.ReadFile(filepath.Join(dir, MerakiItemsFile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(cached) != string(got) {
+		t.Fatalf("not written: %s", cached)
+	}
+}

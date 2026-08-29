@@ -16,6 +16,9 @@ type Item struct {
 	Into        []string
 	Depth       int
 	IconURL     string
+	// ShopRoles are the in-game class tabs from Meraki shop.tags.
+	// Empty means MatchesRole falls back to the Data Dragon tag heuristic.
+	ShopRoles []Role
 }
 
 // Has reports whether the item carries a Data Dragon tag.

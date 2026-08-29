@@ -15,15 +15,18 @@ const (
 	UserAgent      = "golol/1.0"
 	ItemsFile      = "item.json"
 	ChampionsFile  = "championFull.json"
-	MerakiFile     = "meraki-champions.json"
-	MerakiURL      = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions.json"
+	MerakiFile      = "meraki-champions.json"
+	MerakiURL       = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/champions.json"
+	MerakiItemsFile = "meraki-items.json"
+	MerakiItemsURL  = "https://cdn.merakianalytics.com/riot/lol/resources/latest/en-US/items.json"
 )
 
 // Client fetches static Data Dragon payloads. No Riot API key is required.
 type Client struct {
-	BaseURL    string
-	MerakiURL  string
-	HTTPClient *http.Client
+	BaseURL        string
+	MerakiURL      string
+	MerakiItemsURL string
+	HTTPClient     *http.Client
 }
 
 // NewClient returns a client pointed at the official CDN.
@@ -69,6 +72,15 @@ func (c *Client) FetchMeraki(ctx context.Context) ([]byte, error) {
 	url := MerakiURL
 	if c != nil && strings.TrimSpace(c.MerakiURL) != "" {
 		url = c.MerakiURL
+	}
+	return c.get(ctx, url)
+}
+
+// FetchMerakiItems downloads the community item dump (shop class tabs).
+func (c *Client) FetchMerakiItems(ctx context.Context) ([]byte, error) {
+	url := MerakiItemsURL
+	if c != nil && strings.TrimSpace(c.MerakiItemsURL) != "" {
+		url = c.MerakiItemsURL
 	}
 	return c.get(ctx, url)
 }
