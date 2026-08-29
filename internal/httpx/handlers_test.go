@@ -482,7 +482,11 @@ func TestStaticCSS(t *testing.T) {
 		t.Fatalf("status %d", rec.Code)
 	}
 	body, _ := io.ReadAll(rec.Body)
-	if !strings.Contains(string(body), "--gold") {
+	css := string(body)
+	if !strings.Contains(css, "--gold") {
 		t.Fatal("css not served")
+	}
+	if !strings.Contains(css, ".item[hidden]") || !strings.Contains(css, ".champ[hidden]") {
+		t.Fatal("picker search needs [hidden] to beat display:flex")
 	}
 }
