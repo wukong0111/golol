@@ -39,7 +39,7 @@ func (it Item) MatchesGroup(tags []string) bool {
 	return it.HasAny(tags...)
 }
 
-// Tier classifies the item by Data Dragon depth.
+// Tier is the shop quality bucket (básico / épico / legendario).
 type Tier int
 
 const (
@@ -59,16 +59,17 @@ func (t Tier) Label() string {
 	}
 }
 
-// TierOf maps depth to a shop quality bucket.
-func TierOf(depth int) Tier {
-	switch {
-	case depth >= 3:
-		return TierLegendary
-	case depth == 2:
-		return TierEpic
-	default:
+// Tier is the All Items shop bucket.
+// Data Dragon depth only counts recipe layers, so Rabadon's Deathcap
+// (Needlessly Large Rod ×2) is depth 2 but still a finished legendary.
+func (it Item) Tier() Tier {
+	if len(it.From) == 0 {
 		return TierBasic
 	}
+	if len(it.Into) == 0 || it.Depth >= 3 {
+		return TierLegendary
+	}
+	return TierEpic
 }
 
 func tagSet(tags []string) map[string]struct{} {

@@ -151,10 +151,10 @@ func TestParseRoleUnknownIsAll(t *testing.T) {
 
 func TestGroupByTier(t *testing.T) {
 	items := []Item{
-		{ID: "3", Name: "C", Depth: 3, Gold: 3000},
-		{ID: "1", Name: "A", Depth: 1, Gold: 300},
-		{ID: "2", Name: "B", Depth: 2, Gold: 800},
-		{ID: "0", Name: "Z", Depth: 0, Gold: 400},
+		{ID: "3", Name: "C", From: []string{"2"}, Gold: 3000},
+		{ID: "1", Name: "A", Gold: 300},
+		{ID: "2", Name: "B", From: []string{"1"}, Into: []string{"3"}, Gold: 800},
+		{ID: "0", Name: "Z", Gold: 400},
 	}
 	groups := GroupByTier(items)
 	if len(groups) != 3 {
@@ -168,5 +168,38 @@ func TestGroupByTier(t *testing.T) {
 	}
 	if groups[1].Label != "Épicos" || groups[2].Label != "Legendarios" {
 		t.Fatalf("labels: %s %s", groups[1].Label, groups[2].Label)
+	}
+}
+
+func TestFinishedDepth2IsLegendary(t *testing.T) {
+	raba := Item{ID: "3089", Name: "Rabadon", Depth: 2, From: []string{"1058", "1058"}}
+	if raba.Tier() != TierLegendary {
+		t.Fatalf("rabadon: %v", raba.Tier())
+	}
+	ie := Item{ID: "3031", Name: "Infinity Edge", Depth: 2, From: []string{"1038", "1037", "1018"}}
+	if ie.Tier() != TierLegendary {
+		t.Fatalf("infinity edge: %v", ie.Tier())
+	}
+}
+
+func TestComponentDepth2StaysEpic(t *testing.T) {
+	lost := Item{ID: "3802", Name: "Lost Chapter", Depth: 2, From: []string{"1052"}, Into: []string{"3003"}}
+	if lost.Tier() != TierEpic {
+		t.Fatalf("lost chapter: %v", lost.Tier())
+	}
+}
+
+func TestNoRecipeIsBasic(t *testing.T) {
+	rod := Item{ID: "1058", Name: "NLR", Into: []string{"3089"}}
+	if rod.Tier() != TierBasic {
+		t.Fatalf("needlessly large rod: %v", rod.Tier())
+	}
+}
+
+func TestDepth3WithIntoIsLegendary(t *testing.T) {
+	// Transforms into a non-shop item (like Seraph's); still a finished legendary.
+	diadem := Item{ID: "2526", Name: "Diadema", Depth: 3, From: []string{"3114"}, Into: []string{"2530"}}
+	if diadem.Tier() != TierLegendary {
+		t.Fatalf("diadem: %v", diadem.Tier())
 	}
 }

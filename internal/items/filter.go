@@ -88,7 +88,7 @@ type Group struct {
 func GroupByTier(catalog []Item) []Group {
 	buckets := [3][]Item{}
 	for _, it := range catalog {
-		t := TierOf(it.Depth)
+		t := it.Tier()
 		buckets[t] = append(buckets[t], it)
 	}
 	var groups []Group
