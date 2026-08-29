@@ -13,7 +13,7 @@ import (
 	"golol/web"
 )
 
-// Server serves the /items shop and the /champions roster.
+// Server serves the /items shop, the /champions roster, and the /builds planner.
 type Server struct {
 	catalog   atomic.Pointer[items.Catalog]
 	champions atomic.Pointer[champions.Catalog]
@@ -81,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /items/{id}", s.detail)
 	mux.HandleFunc("GET /champions", s.championsPage)
 	mux.HandleFunc("GET /champions/{id}", s.championDetail)
+	mux.HandleFunc("GET /builds", s.buildsPage)
 
 	static, err := fs.Sub(web.Static, "static")
 	if err != nil {

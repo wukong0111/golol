@@ -1,0 +1,95 @@
+{{define "builds"}}
+{{template "html-start" .}}
+<div class="builds-page" data-item-slots="7">
+  <p id="builds-mode" class="builds-mode" aria-live="polite">Selecciona una build para editarla.</p>
+
+  <div class="builds-pickers">
+    <section class="picker main-pane" id="champ-picker">
+      <div class="picker-head">
+        <h2>Campeones</h2>
+        <label class="picker-search">
+          <span class="visually-hidden">Buscar campeón</span>
+          <input type="search"
+                 id="champ-search"
+                 placeholder="Buscar campeón…"
+                 autocomplete="off"
+                 spellcheck="false">
+        </label>
+      </div>
+      <p class="grid-meta" id="champ-count">{{if eq .ChampCount 1}}1 campeón{{else}}{{.ChampCount}} campeones{{end}}</p>
+      <div class="picker-body">
+        {{if eq .ChampCount 0}}
+        <p class="empty">No hay campeones en el catálogo.</p>
+        {{else}}
+        <div class="champ-grid">
+          {{range .Champions}}
+          <button type="button"
+                  class="champ"
+                  title="{{.Name}}"
+                  data-kind="champion"
+                  data-id="{{.ID}}"
+                  data-name="{{.Name}}"
+                  data-icon="{{.IconURL}}">
+            <img src="{{.IconURL}}" alt="{{.Name}}" width="64" height="64" loading="lazy">
+            <span class="champ-name">{{.Name}}</span>
+          </button>
+          {{end}}
+        </div>
+        {{end}}
+        <p class="empty picker-empty" id="champ-empty" hidden>Ningún campeón coincide con esa búsqueda.</p>
+      </div>
+    </section>
+
+    <section class="picker main-pane" id="item-picker">
+      <div class="picker-head">
+        <h2>Objetos</h2>
+        <label class="picker-search">
+          <span class="visually-hidden">Buscar objeto</span>
+          <input type="search"
+                 id="item-search"
+                 placeholder="Buscar objeto…"
+                 autocomplete="off"
+                 spellcheck="false">
+        </label>
+      </div>
+      <p class="grid-meta" id="item-count">{{.ItemCount}} objeto{{if ne .ItemCount 1}}s{{end}}</p>
+      <div class="picker-body">
+        {{if eq .ItemCount 0}}
+        <p class="empty">No hay objetos en la tienda.</p>
+        {{else}}
+          {{range .Groups}}
+          <section class="tier" data-tier>
+            <h3>{{.Label}}</h3>
+            <div class="grid">
+              {{range .Items}}
+              <button type="button"
+                      class="item"
+                      title="{{.Name}} — {{.Gold}} oro"
+                      data-kind="item"
+                      data-id="{{.ID}}"
+                      data-name="{{.Name}}"
+                      data-icon="{{.IconURL}}">
+                <img src="{{.IconURL}}" alt="{{.Name}}" width="48" height="48" loading="lazy">
+                <span class="gold">{{.Gold}}</span>
+              </button>
+              {{end}}
+            </div>
+          </section>
+          {{end}}
+        {{end}}
+        <p class="empty picker-empty" id="item-empty" hidden>Ningún objeto coincide con esa búsqueda.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="builds-board main-pane">
+    <div class="builds-toolbar">
+      <h2>Colecciones</h2>
+      <button type="button" id="add-build" class="btn">Añadir build</button>
+    </div>
+    <div id="builds-list"></div>
+  </section>
+</div>
+<script src="/static/js/builds.js"></script>
+{{template "html-end" .}}
+{{end}}

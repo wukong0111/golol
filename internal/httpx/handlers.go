@@ -52,6 +52,14 @@ type champPage struct {
 	Abilities     []abilityView
 }
 
+type buildPage struct {
+	frame
+	Champions  []champions.Champion
+	ChampCount int
+	Groups     []items.Group
+	ItemCount  int
+}
+
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	if !s.ready.Load() {
@@ -126,6 +134,23 @@ func (s *Server) championsPage(w http.ResponseWriter, r *http.Request) {
 		name = "champion-grid"
 	}
 	s.render(w, name, p)
+}
+
+func (s *Server) buildsPage(w http.ResponseWriter, r *http.Request) {
+	itemsCat := s.catalogOrEmpty()
+	champsCat := s.championsOrEmpty()
+	version := itemsCat.Version
+	if version == "" {
+		version = champsCat.Version
+	}
+	p := buildPage{
+		frame:      buildsFrame(version),
+		Champions:  champsCat.Champions,
+		ChampCount: len(champsCat.Champions),
+		Groups:     items.GroupByTier(itemsCat.Items),
+		ItemCount:  len(itemsCat.Items),
+	}
+	s.render(w, "builds", p)
 }
 
 func (s *Server) championDetail(w http.ResponseWriter, r *http.Request) {
@@ -218,5 +243,14 @@ func champsFrame(version string) frame {
 		Title:    "golol — Campeones",
 		BrandSub: "campeones",
 		Active:   "champions",
+	}
+}
+
+func buildsFrame(version string) frame {
+	return frame{
+		Version:  version,
+		Title:    "golol — Builds",
+		BrandSub: "creador de builds",
+		Active:   "builds",
 	}
 }

@@ -4,6 +4,7 @@ Selector de objetos y campeones de League of Legends. Go + HTMX, datos de [Data 
 
 - [`/items`](http://localhost:8080/items) — tienda de objetos, al estilo de la pestaña All Items.
 - [`/champions`](http://localhost:8080/champions) — roster filtrable por rol, con splash y kit.
+- [`/builds`](http://localhost:8080/builds) — creador de builds: campeón + 7 objetos, guardado en el navegador.
 
 ## Cómo arrancarlo
 
@@ -11,7 +12,7 @@ Selector de objetos y campeones de League of Legends. Go + HTMX, datos de [Data 
 make run
 ```
 
-Abre [http://localhost:8080/items](http://localhost:8080/items) o [http://localhost:8080/champions](http://localhost:8080/champions). El primer arranque descarga `item.json` y `championFull.json` del CDN (sin API key) y los deja en `.cache/ddragon/`.
+Abre [http://localhost:8080/items](http://localhost:8080/items), [http://localhost:8080/champions](http://localhost:8080/champions) o [http://localhost:8080/builds](http://localhost:8080/builds). El primer arranque descarga `item.json` y `championFull.json` del CDN (sin API key) y los deja en `.cache/ddragon/`.
 
 | Variable | Default | Qué hace |
 |---|---|---|
@@ -40,5 +41,11 @@ Solo se listan objetos comprables en la Grieta del Invocador. Data Dragon marca 
 
 - **Rol** (varios, OR): Luchador, Tirador, Asesino, Mago, Tanque, Soporte. Sin checks = todos. Un campeón entra si tiene **alguno** de los roles marcados. Ejemplo: `/champions?role=fighter&role=tank`.
 - Al seleccionar un campeón se muestra el splash de la skin por defecto y las habilidades P/Q/W/E/R.
+
+### Builds (`/builds`)
+
+- Dos selectores con buscador (campeones y objetos). Pulsa **Añadir build** para crear una colección: un hueco de campeón y siete de objetos (el extra de esta temporada para ADC).
+- Al seleccionar una colección entras en modo edición: el campeón u objeto que elijas se añade a esa build. Pulsar un objeto de la colección lo quita.
+- Las colecciones se guardan en `localStorage` como JSON (`golol.builds`).
 
 golol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.

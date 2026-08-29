@@ -287,6 +287,9 @@ func TestChampionsPage(t *testing.T) {
 	if !strings.Contains(body, `href="/champions" class="is-on"`) {
 		t.Fatal("champions nav should be active")
 	}
+	if !strings.Contains(body, `href="/builds"`) {
+		t.Fatal("builds nav missing on champions page")
+	}
 	if !strings.Contains(body, `id="champ-roster"`) {
 		t.Fatal("roster disclosure missing")
 	}
@@ -411,6 +414,63 @@ func TestItemsPageHasNav(t *testing.T) {
 	}
 	if !strings.Contains(body, `href="/champions"`) {
 		t.Fatal("champions nav missing on items page")
+	}
+	if !strings.Contains(body, `href="/builds"`) {
+		t.Fatal("builds nav missing on items page")
+	}
+}
+
+func TestBuildsPage(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/builds", nil)
+	rec := httptest.NewRecorder()
+	testHandler(t).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"golol — Builds",
+		"creador de builds",
+		`href="/builds" class="is-on"`,
+		`id="add-build"`,
+		"Añadir build",
+		"Buscar campeón",
+		"Buscar objeto",
+		`data-item-slots="7"`,
+		`data-kind="champion"`,
+		`data-kind="item"`,
+		`data-id="Aatrox"`,
+		`data-id="Ahri"`,
+		"Armadura de tela",
+		"Daga",
+		`id="builds-list"`,
+		`src="/static/js/builds.js"`,
+		"Colecciones",
+		"Parche 16.16.1",
+		"Selecciona una build para editarla",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in builds page", want)
+		}
+	}
+	if strings.Contains(body, `href="/items" class="is-on"`) || strings.Contains(body, `href="/champions" class="is-on"`) {
+		t.Fatal("other nav items should not be active on builds")
+	}
+}
+
+func TestBuildsJS(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/static/js/builds.js", nil)
+	rec := httptest.NewRecorder()
+	testHandler(t).ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status %d", rec.Code)
+	}
+	body, _ := io.ReadAll(rec.Body)
+	src := string(body)
+	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`} {
+		if !strings.Contains(src, want) {
+			t.Fatalf("missing %q in builds.js", want)
+		}
 	}
 }
 

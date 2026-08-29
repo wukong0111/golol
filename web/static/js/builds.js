@@ -1,0 +1,401 @@
+(function () {
+  var STORAGE_KEY = "golol.builds";
+  var ITEM_SLOTS = 7;
+
+  var page = document.querySelector(".builds-page");
+  if (!page) return;
+
+  var slotsAttr = parseInt(page.getAttribute("data-item-slots"), 10);
+  if (slotsAttr > 0) ITEM_SLOTS = slotsAttr;
+
+  var list = document.getElementById("builds-list");
+  var mode = document.getElementById("builds-mode");
+  var addBtn = document.getElementById("add-build");
+  var champPicker = document.getElementById("champ-picker");
+  var itemPicker = document.getElementById("item-picker");
+  var champSearch = document.getElementById("champ-search");
+  var itemSearch = document.getElementById("item-search");
+  var champCount = document.getElementById("champ-count");
+  var itemCount = document.getElementById("item-count");
+  var champEmpty = document.getElementById("champ-empty");
+  var itemEmpty = document.getElementById("item-empty");
+  var champTotal = champPicker ? champPicker.querySelectorAll("[data-kind=champion]").length : 0;
+  var itemTotal = itemPicker ? itemPicker.querySelectorAll("[data-kind=item]").length : 0;
+
+  var builds = load();
+  var selectedId = null;
+
+  if (addBtn) {
+    addBtn.addEventListener("click", function () {
+      var build = { id: newId(), champion: null, items: [] };
+      builds.push(build);
+      selectedId = build.id;
+      persist();
+      render();
+    });
+  }
+
+  if (list) {
+    list.addEventListener("click", function (e) {
+      var remove = e.target.closest("[data-remove-build]");
+      if (remove) {
+        e.preventDefault();
+        removeBuild(remove.getAttribute("data-remove-build"));
+        return;
+      }
+      var itemBtn = e.target.closest("[data-remove-item]");
+      if (itemBtn) {
+        e.preventDefault();
+        var article = itemBtn.closest("[data-build-id]");
+        if (!article) return;
+        var idx = parseInt(itemBtn.getAttribute("data-remove-item"), 10);
+        removeItem(article.getAttribute("data-build-id"), idx);
+        return;
+      }
+      var article = e.target.closest("[data-build-id]");
+      if (!article) return;
+      selectBuild(article.getAttribute("data-build-id"));
+    });
+
+    list.addEventListener("keydown", function (e) {
+      if (e.key !== "Enter" && e.key !== " ") return;
+      if (e.target.closest("button")) return;
+      var article = e.target.closest("[data-build-id]");
+      if (!article) return;
+      e.preventDefault();
+      selectBuild(article.getAttribute("data-build-id"));
+    });
+  }
+
+  if (champPicker) {
+    champPicker.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-kind=champion]");
+      if (!btn) return;
+      addChampion(pieceFrom(btn));
+    });
+  }
+
+  if (itemPicker) {
+    itemPicker.addEventListener("click", function (e) {
+      var btn = e.target.closest("[data-kind=item]");
+      if (!btn) return;
+      addItem(pieceFrom(btn));
+    });
+  }
+
+  if (champSearch) {
+    champSearch.addEventListener("input", function () {
+      filterPicker(champPicker, champSearch.value, champCount, champEmpty, champTotal, "campeón", "campeones");
+    });
+  }
+
+  if (itemSearch) {
+    itemSearch.addEventListener("input", function () {
+      filterPicker(itemPicker, itemSearch.value, itemCount, itemEmpty, itemTotal, "objeto", "objetos");
+    });
+  }
+
+  render();
+
+  function selectBuild(id) {
+    selectedId = id;
+    render();
+  }
+
+  function addChampion(piece) {
+    var build = selectedBuild();
+    if (!build) {
+      flashMode();
+      return;
+    }
+    if (!piece.id) return;
+    build.champion = piece;
+    persist();
+    render();
+  }
+
+  function addItem(piece) {
+    var build = selectedBuild();
+    if (!build) {
+      flashMode();
+      return;
+    }
+    if (!piece.id) return;
+    if (build.items.some(function (it) { return it.id === piece.id; })) return;
+    if (build.items.length >= ITEM_SLOTS) {
+      setMode("Esta build ya tiene " + ITEM_SLOTS + " objetos.");
+      flashMode();
+      return;
+    }
+    build.items.push(piece);
+    persist();
+    render();
+  }
+
+  function removeItem(buildId, index) {
+    var build = findBuild(buildId);
+    if (!build) return;
+    if (index < 0 || index >= build.items.length) return;
+    build.items.splice(index, 1);
+    selectedId = buildId;
+    persist();
+    render();
+  }
+
+  function removeBuild(id) {
+    builds = builds.filter(function (b) { return b.id !== id; });
+    if (selectedId === id) selectedId = null;
+    persist();
+    render();
+  }
+
+  function selectedBuild() {
+    return findBuild(selectedId);
+  }
+
+  function findBuild(id) {
+    if (!id) return null;
+    for (var i = 0; i < builds.length; i++) {
+      if (builds[i].id === id) return builds[i];
+    }
+    return null;
+  }
+
+  function persist() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(builds));
+    } catch (err) {
+      setMode("No se pudo guardar en el almacenamiento del navegador.");
+    }
+  }
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return [];
+      var data = JSON.parse(raw);
+      if (!Array.isArray(data)) return [];
+      return data.map(normalizeBuild).filter(Boolean);
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function normalizeBuild(raw) {
+    if (!raw || typeof raw !== "object") return null;
+    var id = String(raw.id || "");
+    if (!id) id = newId();
+    return {
+      id: id,
+      champion: normalizePiece(raw.champion),
+      items: normalizeItems(raw.items)
+    };
+  }
+
+  function normalizeItems(raw) {
+    if (!Array.isArray(raw)) return [];
+    var out = [];
+    for (var i = 0; i < raw.length && out.length < ITEM_SLOTS; i++) {
+      var piece = normalizePiece(raw[i]);
+      if (piece) out.push(piece);
+    }
+    return out;
+  }
+
+  function normalizePiece(raw) {
+    if (!raw || typeof raw !== "object" || !raw.id) return null;
+    return {
+      id: String(raw.id),
+      name: String(raw.name || ""),
+      icon: String(raw.icon || "")
+    };
+  }
+
+  function pieceFrom(btn) {
+    return {
+      id: btn.getAttribute("data-id") || "",
+      name: btn.getAttribute("data-name") || "",
+      icon: btn.getAttribute("data-icon") || ""
+    };
+  }
+
+  function newId() {
+    if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+    return "b-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 8);
+  }
+
+  function render() {
+    renderList();
+    renderMode();
+    syncPickerHighlights();
+  }
+
+  function renderList() {
+    if (!list) return;
+    list.replaceChildren();
+    if (builds.length === 0) {
+      var empty = document.createElement("p");
+      empty.className = "empty";
+      empty.textContent = "Aún no hay builds. Pulsa Añadir build para crear una.";
+      list.appendChild(empty);
+      return;
+    }
+    builds.forEach(function (build) {
+      list.appendChild(renderBuild(build));
+    });
+  }
+
+  function renderBuild(build) {
+    var selected = build.id === selectedId;
+    var article = document.createElement("article");
+    article.className = "build" + (selected ? " is-on" : "");
+    article.setAttribute("data-build-id", build.id);
+    article.setAttribute("tabindex", "0");
+    article.setAttribute("aria-current", selected ? "true" : "false");
+    article.setAttribute("aria-label", buildLabel(build, selected));
+
+    article.appendChild(renderChampSlot(build.champion));
+    article.appendChild(renderItemSlots(build));
+
+    var remove = document.createElement("button");
+    remove.type = "button";
+    remove.className = "build-remove";
+    remove.setAttribute("data-remove-build", build.id);
+    remove.setAttribute("aria-label", "Quitar build");
+    remove.textContent = "Quitar";
+    article.appendChild(remove);
+
+    return article;
+  }
+
+  function renderChampSlot(champ) {
+    var wrap = document.createElement("div");
+    wrap.className = "build-champ" + (champ ? "" : " is-empty");
+    var slot = document.createElement("div");
+    slot.className = "slot slot-champ" + (champ ? "" : " is-empty");
+    if (champ) {
+      var img = document.createElement("img");
+      img.src = champ.icon;
+      img.alt = champ.name || "";
+      img.width = 64;
+      img.height = 64;
+      slot.appendChild(img);
+    }
+    wrap.appendChild(slot);
+    var name = document.createElement("span");
+    name.className = "slot-name";
+    name.textContent = champ ? (champ.name || champ.id) : "Campeón";
+    wrap.appendChild(name);
+    return wrap;
+  }
+
+  function renderItemSlots(build) {
+    var ol = document.createElement("ol");
+    ol.className = "build-items";
+    for (var i = 0; i < ITEM_SLOTS; i++) {
+      var li = document.createElement("li");
+      var piece = build.items[i];
+      if (piece) {
+        var btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "slot";
+        btn.setAttribute("data-remove-item", String(i));
+        btn.title = "Quitar " + (piece.name || piece.id);
+        btn.setAttribute("aria-label", "Quitar " + (piece.name || piece.id));
+        var img = document.createElement("img");
+        img.src = piece.icon;
+        img.alt = piece.name || "";
+        img.width = 48;
+        img.height = 48;
+        btn.appendChild(img);
+        li.appendChild(btn);
+      } else {
+        var empty = document.createElement("div");
+        empty.className = "slot is-empty";
+        empty.setAttribute("aria-hidden", "true");
+        li.appendChild(empty);
+      }
+      ol.appendChild(li);
+    }
+    return ol;
+  }
+
+  function buildLabel(build, selected) {
+    var name = build.champion && build.champion.name ? build.champion.name : "sin campeón";
+    var n = build.items.length;
+    var prefix = selected ? "Build en edición, " : "Build, ";
+    return prefix + name + ", " + n + (n === 1 ? " objeto" : " objetos");
+  }
+
+  function renderMode() {
+    var build = selectedBuild();
+    if (build) {
+      var name = build.champion && build.champion.name ? build.champion.name : "esta build";
+      setMode("Editando " + name + ". Elige un campeón o un objeto para añadirlo. Pulsa un objeto de la colección para quitarlo.");
+      page.classList.add("is-editing");
+    } else {
+      setMode("Selecciona una build para editarla.");
+      page.classList.remove("is-editing");
+    }
+  }
+
+  function setMode(text) {
+    if (mode) mode.textContent = text;
+  }
+
+  function flashMode() {
+    if (!mode) return;
+    mode.classList.remove("is-flash");
+    void mode.offsetWidth;
+    mode.classList.add("is-flash");
+  }
+
+  function syncPickerHighlights() {
+    var build = selectedBuild();
+    var champId = build && build.champion ? build.champion.id : "";
+    document.querySelectorAll("[data-kind=champion]").forEach(function (el) {
+      el.classList.toggle("is-on", champId !== "" && el.getAttribute("data-id") === champId);
+    });
+    var itemIds = {};
+    if (build) {
+      build.items.forEach(function (it) { itemIds[it.id] = true; });
+    }
+    document.querySelectorAll("[data-kind=item]").forEach(function (el) {
+      el.classList.toggle("is-on", !!itemIds[el.getAttribute("data-id")]);
+    });
+  }
+
+  function filterPicker(root, query, countEl, emptyEl, total, singular, plural) {
+    if (!root) return;
+    var q = fold(query);
+    var visible = 0;
+    root.querySelectorAll("[data-kind]").forEach(function (el) {
+      var match = q === "" || fold(el.getAttribute("data-name") || "").indexOf(q) !== -1;
+      el.hidden = !match;
+      if (match) visible += 1;
+    });
+    root.querySelectorAll("[data-tier]").forEach(function (tier) {
+      var any = false;
+      tier.querySelectorAll("[data-kind]").forEach(function (el) {
+        if (!el.hidden) any = true;
+      });
+      tier.hidden = !any;
+    });
+    if (countEl) {
+      if (q === "") {
+        countEl.textContent = total === 1 ? "1 " + singular : total + " " + plural;
+      } else {
+        countEl.textContent = visible === 1 ? "1 " + singular : visible + " " + plural;
+      }
+    }
+    if (emptyEl) emptyEl.hidden = visible !== 0 || total === 0;
+  }
+
+  function fold(s) {
+    return String(s || "")
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/['’.]/g, "")
+      .toLowerCase();
+  }
+})();
