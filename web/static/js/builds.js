@@ -24,6 +24,7 @@
 
   var builds = load();
   var selectedId = null;
+  var bonusIndex = loadBonusIndex();
 
   if (addBtn) {
     addBtn.addEventListener("click", function () {
@@ -265,6 +266,9 @@
     remove.textContent = "Quitar";
     article.appendChild(remove);
 
+    var totals = renderBonuses(build);
+    if (totals) article.appendChild(totals);
+
     return article;
   }
 
@@ -320,11 +324,101 @@
     return ol;
   }
 
+  function renderBonuses(build) {
+    var summed = sumBonuses(build.items);
+    if (summed.length === 0) return null;
+    var wrap = document.createElement("div");
+    wrap.className = "build-totals";
+    var heading = document.createElement("h3");
+    heading.className = "build-totals-label";
+    heading.textContent = "Mejoras";
+    wrap.appendChild(heading);
+    var ul = document.createElement("ul");
+    ul.className = "build-bonuses";
+    summed.forEach(function (b) {
+      var li = document.createElement("li");
+      li.className = "build-bonus";
+      var amt = document.createElement("span");
+      amt.className = "bonus-amt";
+      amt.textContent = formatBonusAmount(b.amount, b.percent);
+      li.appendChild(amt);
+      li.appendChild(document.createTextNode(" " + displayBonusName(b.name)));
+      ul.appendChild(li);
+    });
+    wrap.appendChild(ul);
+    return wrap;
+  }
+
+  function sumBonuses(pieces) {
+    var acc = {};
+    (pieces || []).forEach(function (it) {
+      if (!it || !it.id) return;
+      var list = bonusIndex[it.id];
+      if (!list || !list.length) return;
+      list.forEach(function (b) {
+        var name = String(b.name || "");
+        var key = (b.percent ? "1:" : "0:") + name;
+        if (!acc[key]) {
+          acc[key] = {
+            amount: 0,
+            percent: !!b.percent,
+            name: name,
+            rank: typeof b.rank === "number" ? b.rank : 999
+          };
+        }
+        acc[key].amount += Number(b.amount) || 0;
+      });
+    });
+    var out = [];
+    Object.keys(acc).forEach(function (k) {
+      if (acc[k].amount !== 0) out.push(acc[k]);
+    });
+    out.sort(function (a, b) {
+      if (a.rank !== b.rank) return a.rank - b.rank;
+      if (a.percent !== b.percent) return a.percent ? 1 : -1;
+      if (a.name < b.name) return -1;
+      if (a.name > b.name) return 1;
+      return 0;
+    });
+    return out;
+  }
+
+  function formatBonusAmount(n, percent) {
+    var v = Number(n) || 0;
+    var s;
+    if (Math.abs(v - Math.round(v)) < 1e-6) s = String(Math.round(v));
+    else s = String(Math.round(v * 100) / 100);
+    var sign = v < 0 ? "" : "+";
+    return sign + s + (percent ? "%" : "");
+  }
+
+  function displayBonusName(name) {
+    return String(name || "").replace(/^de\s+/i, "").replace(/^of\s+/i, "");
+  }
+
+  function loadBonusIndex() {
+    var el = document.getElementById("item-bonuses");
+    if (!el) return {};
+    try {
+      var data = JSON.parse(el.textContent || "{}");
+      if (!data || typeof data !== "object" || Array.isArray(data)) return {};
+      return data;
+    } catch (err) {
+      return {};
+    }
+  }
+
   function buildLabel(build, selected) {
     var name = build.champion && build.champion.name ? build.champion.name : "sin campeón";
     var n = build.items.length;
     var prefix = selected ? "Build en edición, " : "Build, ";
-    return prefix + name + ", " + n + (n === 1 ? " objeto" : " objetos");
+    var label = prefix + name + ", " + n + (n === 1 ? " objeto" : " objetos");
+    var summed = sumBonuses(build.items);
+    if (summed.length === 0) return label;
+    var parts = summed.map(function (b) {
+      return formatBonusAmount(b.amount, b.percent) + " " + displayBonusName(b.name);
+    });
+    return label + ", " + parts.join(", ");
   }
 
   function renderMode() {

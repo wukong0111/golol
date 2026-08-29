@@ -16,6 +16,8 @@ type Item struct {
 	Into        []string
 	Depth       int
 	IconURL     string
+	// Bonuses are the numeric lines of the <stats> block (shop mejoras).
+	Bonuses []Bonus
 	// ShopRoles are the in-game class tabs from Meraki shop.tags.
 	// Empty means MatchesRole falls back to the Data Dragon tag heuristic.
 	ShopRoles []Role

@@ -54,10 +54,11 @@ type champPage struct {
 
 type buildPage struct {
 	frame
-	Champions  []champions.Champion
-	ChampCount int
-	Groups     []items.Group
-	ItemCount  int
+	Champions   []champions.Champion
+	ChampCount  int
+	Groups      []items.Group
+	ItemCount   int
+	BonusesJSON template.JS
 }
 
 func (s *Server) health(w http.ResponseWriter, r *http.Request) {
@@ -144,13 +145,22 @@ func (s *Server) buildsPage(w http.ResponseWriter, r *http.Request) {
 		version = champsCat.Version
 	}
 	p := buildPage{
-		frame:      buildsFrame(version),
-		Champions:  champsCat.Champions,
-		ChampCount: len(champsCat.Champions),
-		Groups:     items.GroupByTier(itemsCat.Items),
-		ItemCount:  len(itemsCat.Items),
+		frame:       buildsFrame(version),
+		Champions:   champsCat.Champions,
+		ChampCount:  len(champsCat.Champions),
+		Groups:      items.GroupByTier(itemsCat.Items),
+		ItemCount:   len(itemsCat.Items),
+		BonusesJSON: bonusesJSON(itemsCat.Items),
 	}
 	s.render(w, "builds", p)
+}
+
+func bonusesJSON(catalog []items.Item) template.JS {
+	raw, err := json.Marshal(items.BonusIndex(catalog))
+	if err != nil || len(raw) == 0 {
+		return template.JS("{}")
+	}
+	return template.JS(raw)
 }
 
 func (s *Server) championDetail(w http.ResponseWriter, r *http.Request) {

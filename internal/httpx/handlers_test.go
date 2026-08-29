@@ -1,6 +1,7 @@
 package httpx
 
 import (
+	"encoding/json"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,7 +20,7 @@ func testCatalog(t *testing.T) *items.Catalog {
 		"data":{
 			"1029":{
 				"name":"Armadura de tela",
-				"description":"<stats><attention>15</attention> Armadura</stats>",
+				"description":"<stats><attention>15</attention> de armadura</stats>",
 				"plaintext":"Un poco de armadura",
 				"gold":{"purchasable":true,"total":300},
 				"tags":["Armor"],
@@ -28,7 +29,7 @@ func testCatalog(t *testing.T) *items.Catalog {
 			},
 			"1042":{
 				"name":"Daga",
-				"description":"<stats>AS</stats>",
+				"description":"<stats><attention>10%</attention> de velocidad de ataque</stats>",
 				"plaintext":"Velocidad",
 				"gold":{"purchasable":true,"total":250},
 				"tags":["AttackSpeed"],
@@ -37,7 +38,7 @@ func testCatalog(t *testing.T) *items.Catalog {
 			},
 			"3082":{
 				"name":"Guardabrazos",
-				"description":"<stats>armadura y as</stats>",
+				"description":"<stats><attention>40</attention> de armadura<br><attention>15%</attention> de velocidad de ataque</stats>",
 				"from":["1029"],
 				"gold":{"purchasable":true,"total":800},
 				"tags":["Armor","AttackSpeed"],
@@ -456,6 +457,40 @@ func TestBuildsPage(t *testing.T) {
 	if strings.Contains(body, `href="/items" class="is-on"`) || strings.Contains(body, `href="/champions" class="is-on"`) {
 		t.Fatal("other nav items should not be active on builds")
 	}
+
+	raw := jsonFromScript(t, body, "item-bonuses")
+	var idx map[string][]items.Bonus
+	if err := json.Unmarshal([]byte(raw), &idx); err != nil {
+		t.Fatalf("item-bonuses json: %v (%s)", err, raw)
+	}
+	if len(idx["1029"]) != 1 || idx["1029"][0].Amount != 15 || idx["1029"][0].Name != "de armadura" {
+		t.Fatalf("cloth bonuses: %+v", idx["1029"])
+	}
+	if len(idx["1042"]) != 1 || !idx["1042"][0].Percent || idx["1042"][0].Amount != 10 {
+		t.Fatalf("dagger bonuses: %+v", idx["1042"])
+	}
+	if len(idx["3082"]) != 2 {
+		t.Fatalf("warden bonuses: %+v", idx["3082"])
+	}
+}
+
+func jsonFromScript(t *testing.T, body, id string) string {
+	t.Helper()
+	marker := `id="` + id + `"`
+	i := strings.Index(body, marker)
+	if i < 0 {
+		t.Fatalf("script %s missing", id)
+	}
+	gt := strings.Index(body[i:], ">")
+	if gt < 0 {
+		t.Fatalf("script %s unclosed open tag", id)
+	}
+	start := i + gt + 1
+	end := strings.Index(body[start:], "</script>")
+	if end < 0 {
+		t.Fatalf("script %s missing close", id)
+	}
+	return strings.TrimSpace(body[start : start+end])
 }
 
 func TestBuildsJS(t *testing.T) {
@@ -467,7 +502,7 @@ func TestBuildsJS(t *testing.T) {
 	}
 	body, _ := io.ReadAll(rec.Body)
 	src := string(body)
-	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`} {
+	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`, `item-bonuses`, `build-totals`, `Mejoras`} {
 		if !strings.Contains(src, want) {
 			t.Fatalf("missing %q in builds.js", want)
 		}

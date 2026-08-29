@@ -1013,6 +1013,48 @@ button.slot:focus-visible {
   outline-offset: 2px;
 }
 
+.build-totals {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 12px;
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+.build-totals-label {
+  margin: 0;
+  font-family: Marcellus, Georgia, serif;
+  color: var(--gold);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.build-bonuses {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  flex: 1;
+  min-width: 0;
+}
+
+.build-bonus {
+  font-size: 12px;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.build-bonus .bonus-amt {
+  color: #fff;
+  font-weight: 700;
+}
+
 .build-remove {
   appearance: none;
   margin-left: auto;

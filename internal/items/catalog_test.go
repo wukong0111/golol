@@ -12,7 +12,7 @@ func TestParseSummonersRiftOnly(t *testing.T) {
 		"data":{
 			"1029":{
 				"name":"Armadura de tela",
-				"description":"<stats>+15</stats>",
+				"description":"<stats><attention>15</attention> de armadura</stats>",
 				"plaintext":"armadura",
 				"image":{"full":"1029.png"},
 				"gold":{"base":300,"purchasable":true,"total":300,"sell":210},
@@ -56,6 +56,9 @@ func TestParseSummonersRiftOnly(t *testing.T) {
 	}
 	if !cat.Items[0].Has("Armor") {
 		t.Fatal("tags")
+	}
+	if len(cat.Items[0].Bonuses) != 1 || cat.Items[0].Bonuses[0].Amount != 15 || cat.Items[0].Bonuses[0].Name != "de armadura" {
+		t.Fatalf("bonuses: %+v", cat.Items[0].Bonuses)
 	}
 }
 

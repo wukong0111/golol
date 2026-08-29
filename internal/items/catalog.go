@@ -56,6 +56,7 @@ func Parse(version, locale, cdnBase string, raw []byte) (*Catalog, error) {
 			Into:        append([]string(nil), src.Into...),
 			Depth:       src.Depth,
 			IconURL:     ddragon.IconURL(cdnBase, version, image),
+			Bonuses:     ParseBonuses(src.Description),
 		}
 		cat.Items = append(cat.Items, it)
 		cat.ByID[id] = it
