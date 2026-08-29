@@ -85,7 +85,25 @@
   <section class="builds-board main-pane">
     <div class="builds-toolbar">
       <h2>Colecciones</h2>
-      <button type="button" id="add-build" class="btn">Añadir build</button>
+      <div class="builds-actions">
+        <button type="button" id="export-builds" class="btn">Exportar</button>
+        <button type="button" id="import-builds" class="btn">Importar</button>
+        <button type="button" id="add-build" class="btn">Añadir build</button>
+      </div>
+    </div>
+    <div id="import-panel" class="import-panel" hidden>
+      <label class="import-label">
+        <span>Pega un JSON válido de colecciones</span>
+        <textarea id="import-json"
+                  rows="8"
+                  spellcheck="false"
+                  autocomplete="off"
+                  placeholder='[{"id":"…","champion":{…},"items":[…]}]'></textarea>
+      </label>
+      <div class="import-actions">
+        <button type="button" id="import-confirm" class="btn">Cargar</button>
+        <button type="button" id="import-cancel" class="btn">Cancelar</button>
+      </div>
     </div>
     <div id="builds-list"></div>
   </section>

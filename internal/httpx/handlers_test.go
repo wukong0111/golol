@@ -435,6 +435,12 @@ func TestBuildsPage(t *testing.T) {
 		`href="/builds" class="is-on"`,
 		`id="add-build"`,
 		"Añadir build",
+		`id="export-builds"`,
+		"Exportar",
+		`id="import-builds"`,
+		"Importar",
+		`id="import-panel"`,
+		`id="import-json"`,
 		"Buscar campeón",
 		"Buscar objeto",
 		`data-item-slots="7"`,
@@ -502,7 +508,7 @@ func TestBuildsJS(t *testing.T) {
 	}
 	body, _ := io.ReadAll(rec.Body)
 	src := string(body)
-	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`, `item-bonuses`, `build-totals`, `Mejoras`, `item-flyout`, `/items/`} {
+	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`, `item-bonuses`, `build-totals`, `Mejoras`, `item-flyout`, `/items/`, `exportBuilds`, `parseImported`, `clipboard`} {
 		if !strings.Contains(src, want) {
 			t.Fatalf("missing %q in builds.js", want)
 		}
@@ -526,5 +532,8 @@ func TestStaticCSS(t *testing.T) {
 	}
 	if !strings.Contains(css, ".item-flyout") || !strings.Contains(css, ".item-flyout[hidden]") {
 		t.Fatal("build item flyout missing")
+	}
+	if !strings.Contains(css, ".import-panel") || !strings.Contains(css, ".import-panel[hidden]") {
+		t.Fatal("import panel missing")
 	}
 }

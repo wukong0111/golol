@@ -11,6 +11,12 @@
   var list = document.getElementById("builds-list");
   var mode = document.getElementById("builds-mode");
   var addBtn = document.getElementById("add-build");
+  var exportBtn = document.getElementById("export-builds");
+  var importBtn = document.getElementById("import-builds");
+  var importPanel = document.getElementById("import-panel");
+  var importJson = document.getElementById("import-json");
+  var importConfirm = document.getElementById("import-confirm");
+  var importCancel = document.getElementById("import-cancel");
   var champPicker = document.getElementById("champ-picker");
   var itemPicker = document.getElementById("item-picker");
   var champSearch = document.getElementById("champ-search");
@@ -39,6 +45,35 @@
       selectedId = build.id;
       persist();
       render();
+    });
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener("click", exportBuilds);
+  }
+
+  if (importBtn) {
+    importBtn.addEventListener("click", function () {
+      openImportPanel();
+    });
+  }
+
+  if (importConfirm) {
+    importConfirm.addEventListener("click", function () {
+      applyImport(importJson ? importJson.value : "");
+    });
+  }
+
+  if (importCancel) {
+    importCancel.addEventListener("click", closeImportPanel);
+  }
+
+  if (importJson) {
+    importJson.addEventListener("paste", function () {
+      var el = importJson;
+      setTimeout(function () {
+        applyImport(el.value);
+      }, 0);
     });
   }
 
@@ -120,7 +155,9 @@
   }
 
   document.addEventListener("keydown", function (e) {
-    if (e.key === "Escape") hideFlyout();
+    if (e.key !== "Escape") return;
+    hideFlyout();
+    closeImportPanel();
   });
 
   window.addEventListener("scroll", repositionFlyout, true);
@@ -218,6 +255,109 @@
       if (builds[i].id === id) return builds[i];
     }
     return null;
+  }
+
+  function exportBuilds() {
+    var text = JSON.stringify(builds, null, 2);
+    copyText(text).then(function () {
+      setMode("Colecciones copiadas al portapapeles.");
+      flashMode();
+    }).catch(function () {
+      openImportPanel(text);
+      setMode("No se pudo copiar. El JSON está en el recuadro para que lo copies a mano.");
+      flashMode();
+    });
+  }
+
+  function openImportPanel(prefill) {
+    if (!importPanel) return;
+    importPanel.hidden = false;
+    if (importJson) {
+      importJson.value = typeof prefill === "string" ? prefill : "";
+      importJson.focus();
+      importJson.select();
+    }
+    if (typeof prefill !== "string") {
+      setMode("Pega un JSON válido de colecciones.");
+    }
+  }
+
+  function closeImportPanel() {
+    if (!importPanel || importPanel.hidden) return;
+    importPanel.hidden = true;
+    if (importJson) importJson.value = "";
+  }
+
+  function applyImport(raw) {
+    var incoming;
+    try {
+      incoming = parseImported(raw);
+    } catch (err) {
+      setMode(err.message || "Ese texto no es un JSON válido.");
+      flashMode();
+      return;
+    }
+    builds = incoming;
+    selectedId = null;
+    persist();
+    closeImportPanel();
+    render();
+    var n = builds.length;
+    setMode(n === 1 ? "Se importó 1 colección." : "Se importaron " + n + " colecciones.");
+    flashMode();
+  }
+
+  function parseImported(text) {
+    var data;
+    try {
+      data = JSON.parse(String(text || "").trim());
+    } catch (err) {
+      throw new Error("Ese texto no es un JSON válido.");
+    }
+    var list;
+    if (Array.isArray(data)) {
+      list = data;
+    } else if (data && typeof data === "object") {
+      list = [data];
+    } else {
+      throw new Error("El JSON no contiene colecciones.");
+    }
+    var out = [];
+    var seen = {};
+    for (var i = 0; i < list.length; i++) {
+      var b = normalizeBuild(list[i]);
+      if (!b) continue;
+      if (seen[b.id]) b.id = newId();
+      seen[b.id] = true;
+      out.push(b);
+    }
+    if (list.length > 0 && out.length === 0) {
+      throw new Error("El JSON no contiene colecciones.");
+    }
+    return out;
+  }
+
+  function copyText(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(text);
+    }
+    return new Promise(function (resolve, reject) {
+      var ta = document.createElement("textarea");
+      ta.value = text;
+      ta.setAttribute("readonly", "");
+      ta.style.position = "fixed";
+      ta.style.left = "-9999px";
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        if (document.execCommand("copy")) resolve();
+        else reject(new Error("copy"));
+      } catch (err) {
+        reject(err);
+      } finally {
+        document.body.removeChild(ta);
+      }
+    });
   }
 
   function persist() {

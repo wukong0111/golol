@@ -858,10 +858,17 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-wrap: wrap;
   gap: 12px;
   margin-bottom: 12px;
   padding-bottom: 12px;
   border-bottom: 1px solid var(--line);
+}
+
+.builds-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .builds-toolbar h2 {
@@ -896,6 +903,51 @@ body {
 .btn:focus-visible {
   outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
+}
+
+.import-panel {
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--gold-dim);
+  background: var(--slot);
+}
+
+.import-panel[hidden] {
+  display: none;
+}
+
+.import-label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--gold-bright);
+  font-size: 13px;
+}
+
+.import-panel textarea {
+  width: 100%;
+  min-height: 8rem;
+  background: #010a13;
+  border: 1px solid var(--gold-dim);
+  color: var(--gold-bright);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  padding: 8px;
+  resize: vertical;
+}
+
+.import-panel textarea:focus {
+  outline: 2px solid var(--gold-bright);
+  outline-offset: 1px;
+  border-color: var(--gold);
+}
+
+.import-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 .build {

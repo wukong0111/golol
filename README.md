@@ -48,5 +48,6 @@ Solo se listan objetos comprables en la Grieta del Invocador. Data Dragon marca 
 - Al seleccionar una colección entras en modo edición: el campeón u objeto que elijas se añade a esa build. Pulsar un objeto de la colección lo quita. Al pasar el ratón (o al enfocar el hueco) se abre la ficha del objeto en una ventana flotante.
 - Cada colección muestra la suma de las mejoras de sus objetos (el bloque de stats del tooltip: daño, vida, aceleración, etc.).
 - Las colecciones se guardan en `localStorage` como JSON (`golol.builds`).
+- **Exportar** copia ese JSON al portapapeles. **Importar** pide pegar un JSON válido y sustituye las colecciones actuales (también acepta un único objeto de build).
 
 golol isn't endorsed by Riot Games and doesn't reflect the views or opinions of Riot Games or anyone officially involved in producing or managing Riot Games properties. Riot Games and all associated properties are trademarks or registered trademarks of Riot Games, Inc.
