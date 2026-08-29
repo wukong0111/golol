@@ -45,7 +45,7 @@ Solo se listan objetos comprables en la Grieta del Invocador. Data Dragon marca 
 ### Builds (`/builds`)
 
 - Dos selectores con buscador (campeones y objetos). Pulsa **Añadir build** para crear una colección: un hueco de campeón y siete de objetos (el extra de esta temporada para ADC).
-- Al seleccionar una colección entras en modo edición: el campeón u objeto que elijas se añade a esa build. Pulsar un objeto de la colección lo quita.
+- Al seleccionar una colección entras en modo edición: el campeón u objeto que elijas se añade a esa build. Pulsar un objeto de la colección lo quita. Al pasar el ratón (o al enfocar el hueco) se abre la ficha del objeto en una ventana flotante.
 - Cada colección muestra la suma de las mejoras de sus objetos (el bloque de stats del tooltip: daño, vida, aceleración, etc.).
 - Las colecciones se guardan en `localStorage` como JSON (`golol.builds`).
 

@@ -502,7 +502,7 @@ func TestBuildsJS(t *testing.T) {
 	}
 	body, _ := io.ReadAll(rec.Body)
 	src := string(body)
-	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`, `item-bonuses`, `build-totals`, `Mejoras`} {
+	for _, want := range []string{`golol.builds`, `ITEM_SLOTS`, `localStorage`, `item-bonuses`, `build-totals`, `Mejoras`, `item-flyout`, `/items/`} {
 		if !strings.Contains(src, want) {
 			t.Fatalf("missing %q in builds.js", want)
 		}
@@ -523,5 +523,8 @@ func TestStaticCSS(t *testing.T) {
 	}
 	if !strings.Contains(css, ".item[hidden]") || !strings.Contains(css, ".champ[hidden]") {
 		t.Fatal("picker search needs [hidden] to beat display:flex")
+	}
+	if !strings.Contains(css, ".item-flyout") || !strings.Contains(css, ".item-flyout[hidden]") {
+		t.Fatal("build item flyout missing")
 	}
 }

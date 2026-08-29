@@ -1080,6 +1080,30 @@ button.slot:focus-visible {
   outline-offset: 2px;
 }
 
+.item-flyout {
+  position: fixed;
+  z-index: 40;
+  width: min(320px, calc(100vw - 16px));
+  max-height: min(70vh, 32rem);
+  overflow: auto;
+  padding: 14px;
+  background: linear-gradient(180deg, #0d1a2a 0%, #07101c 100%);
+  border: 1px solid var(--gold);
+  box-shadow: 0 0 0 1px #000, 0 16px 48px rgb(0 0 0 / 55%);
+}
+
+.item-flyout[hidden] {
+  display: none;
+}
+
+.item-flyout .detail-placeholder {
+  padding: 8px;
+}
+
+.item-flyout .detail-head h2 {
+  font-size: 18px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .builds-mode.is-flash {
     animation: none;

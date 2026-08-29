@@ -25,6 +25,12 @@
   var builds = load();
   var selectedId = null;
   var bonusIndex = loadBonusIndex();
+  var flyout = ensureFlyout();
+  var flyoutCache = {};
+  var flyoutAnchor = null;
+  var flyoutItemId = "";
+  var flyoutTimer = null;
+  var flyoutAbort = null;
 
   if (addBtn) {
     addBtn.addEventListener("click", function () {
@@ -66,7 +72,59 @@
       e.preventDefault();
       selectBuild(article.getAttribute("data-build-id"));
     });
+
+    list.addEventListener("pointerover", function (e) {
+      if (e.pointerType === "touch") return;
+      var btn = e.target.closest("[data-item-id]");
+      if (!btn || !list.contains(btn)) return;
+      if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
+      requestShowFlyout(btn);
+    });
+
+    list.addEventListener("pointerout", function (e) {
+      if (e.pointerType === "touch") return;
+      var btn = e.target.closest("[data-item-id]");
+      if (!btn || !list.contains(btn)) return;
+      if (e.relatedTarget && btn.contains(e.relatedTarget)) return;
+      requestHideFlyout();
+    });
+
+    list.addEventListener("focusin", function (e) {
+      var btn = e.target.closest("[data-item-id]");
+      if (btn && list.contains(btn)) requestShowFlyout(btn);
+    });
+
+    list.addEventListener("focusout", function (e) {
+      var btn = e.target.closest("[data-item-id]");
+      if (!btn) return;
+      if (e.relatedTarget && (btn.contains(e.relatedTarget) || flyout.contains(e.relatedTarget))) return;
+      requestHideFlyout();
+    });
   }
+
+  if (flyout) {
+    flyout.addEventListener("pointerenter", cancelFlyoutTimer);
+    flyout.addEventListener("pointerleave", requestHideFlyout);
+    flyout.addEventListener("focusin", cancelFlyoutTimer);
+    flyout.addEventListener("focusout", function (e) {
+      if (e.relatedTarget && flyout.contains(e.relatedTarget)) return;
+      requestHideFlyout();
+    });
+    flyout.addEventListener("click", function (e) {
+      e.stopPropagation();
+      var mini = e.target.closest("[data-flyout-item]");
+      if (!mini) return;
+      e.preventDefault();
+      openFlyout(flyoutAnchor, mini.getAttribute("data-flyout-item"));
+    });
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") hideFlyout();
+  });
+
+  window.addEventListener("scroll", repositionFlyout, true);
+  window.addEventListener("resize", repositionFlyout);
 
   if (champPicker) {
     champPicker.addEventListener("click", function (e) {
@@ -232,6 +290,7 @@
   }
 
   function renderList() {
+    hideFlyout();
     if (!list) return;
     list.replaceChildren();
     if (builds.length === 0) {
@@ -304,7 +363,7 @@
         btn.type = "button";
         btn.className = "slot";
         btn.setAttribute("data-remove-item", String(i));
-        btn.title = "Quitar " + (piece.name || piece.id);
+        btn.setAttribute("data-item-id", piece.id);
         btn.setAttribute("aria-label", "Quitar " + (piece.name || piece.id));
         var img = document.createElement("img");
         img.src = piece.icon;
@@ -322,6 +381,166 @@
       ol.appendChild(li);
     }
     return ol;
+  }
+
+  function ensureFlyout() {
+    var el = document.getElementById("item-flyout");
+    if (el) return el;
+    el = document.createElement("div");
+    el.id = "item-flyout";
+    el.className = "item-flyout";
+    el.hidden = true;
+    el.setAttribute("role", "tooltip");
+    document.body.appendChild(el);
+    return el;
+  }
+
+  function requestShowFlyout(btn) {
+    cancelFlyoutTimer();
+    if (!flyout.hidden && flyoutAnchor === btn) return;
+    if (!flyout.hidden) {
+      openFlyout(btn);
+      return;
+    }
+    flyoutTimer = setTimeout(function () {
+      flyoutTimer = null;
+      openFlyout(btn);
+    }, 80);
+  }
+
+  function requestHideFlyout() {
+    cancelFlyoutTimer();
+    flyoutTimer = setTimeout(function () {
+      flyoutTimer = null;
+      hideFlyout();
+    }, 180);
+  }
+
+  function cancelFlyoutTimer() {
+    if (flyoutTimer) {
+      clearTimeout(flyoutTimer);
+      flyoutTimer = null;
+    }
+  }
+
+  function openFlyout(anchor, id) {
+    if (!flyout) return;
+    var itemId = id || (anchor && anchor.getAttribute("data-item-id")) || "";
+    if (!itemId) return;
+    flyoutAnchor = anchor && anchor.isConnected ? anchor : flyoutAnchor;
+    if (flyoutItemId === itemId && !flyout.hidden && flyout.innerHTML) {
+      placeFlyout(flyoutAnchor);
+      return;
+    }
+    flyoutItemId = itemId;
+    if (flyoutCache[itemId]) {
+      setFlyoutHTML(flyoutCache[itemId]);
+      placeFlyout(flyoutAnchor);
+      return;
+    }
+    setFlyoutMessage("Cargando ficha…");
+    placeFlyout(flyoutAnchor);
+    if (flyoutAbort) flyoutAbort.abort();
+    if (typeof AbortController !== "function") {
+      fetchItemDetail(itemId, null);
+      return;
+    }
+    flyoutAbort = new AbortController();
+    fetchItemDetail(itemId, flyoutAbort.signal);
+  }
+
+  function fetchItemDetail(itemId, signal) {
+    var opts = { headers: { Accept: "text/html" } };
+    if (signal) opts.signal = signal;
+    fetch("/items/" + encodeURIComponent(itemId), opts)
+      .then(function (res) {
+        if (!res.ok) throw new Error("missing");
+        return res.text();
+      })
+      .then(function (html) {
+        flyoutCache[itemId] = html;
+        if (flyoutItemId !== itemId) return;
+        setFlyoutHTML(html);
+        placeFlyout(flyoutAnchor);
+      })
+      .catch(function (err) {
+        if (err && err.name === "AbortError") return;
+        if (flyoutItemId !== itemId) return;
+        setFlyoutMessage("No se pudo cargar la ficha.");
+        placeFlyout(flyoutAnchor);
+      });
+  }
+
+  function setFlyoutHTML(html) {
+    flyout.innerHTML = html;
+    flyout.querySelectorAll("[hx-get]").forEach(function (el) {
+      var url = el.getAttribute("hx-get") || "";
+      var id = url.replace(/^\/items\//, "");
+      el.removeAttribute("hx-get");
+      el.removeAttribute("hx-target");
+      el.removeAttribute("hx-swap");
+      el.removeAttribute("hx-push-url");
+      if (id) el.setAttribute("data-flyout-item", id);
+    });
+  }
+
+  function setFlyoutMessage(text) {
+    flyout.replaceChildren();
+    var p = document.createElement("p");
+    p.className = "detail-placeholder";
+    p.textContent = text;
+    flyout.appendChild(p);
+  }
+
+  function placeFlyout(anchor) {
+    if (!flyout || !anchor || !anchor.isConnected) return;
+    flyout.hidden = false;
+    var r = anchor.getBoundingClientRect();
+    var w = flyout.offsetWidth;
+    var h = flyout.offsetHeight;
+    var left = r.right + 10;
+    if (left + w > window.innerWidth - 8) {
+      left = r.left - w - 10;
+      if (left < 8) left = 8;
+    }
+    var top = r.top;
+    if (top + h > window.innerHeight - 8) top = window.innerHeight - h - 8;
+    if (top < 8) top = 8;
+    flyout.style.left = left + "px";
+    flyout.style.top = top + "px";
+    describeFlyout(anchor);
+  }
+
+  function repositionFlyout() {
+    if (!flyout || flyout.hidden) return;
+    if (!flyoutAnchor || !flyoutAnchor.isConnected) {
+      hideFlyout();
+      return;
+    }
+    placeFlyout(flyoutAnchor);
+  }
+
+  function hideFlyout() {
+    cancelFlyoutTimer();
+    if (flyoutAbort) {
+      flyoutAbort.abort();
+      flyoutAbort = null;
+    }
+    flyoutItemId = "";
+    flyoutAnchor = null;
+    describeFlyout(null);
+    if (!flyout) return;
+    flyout.hidden = true;
+    flyout.replaceChildren();
+    flyout.style.left = "";
+    flyout.style.top = "";
+  }
+
+  function describeFlyout(anchor) {
+    document.querySelectorAll("[data-item-id][aria-describedby='item-flyout']").forEach(function (el) {
+      el.removeAttribute("aria-describedby");
+    });
+    if (anchor) anchor.setAttribute("aria-describedby", "item-flyout");
   }
 
   function renderBonuses(build) {
